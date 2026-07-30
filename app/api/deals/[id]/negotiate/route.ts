@@ -1,11 +1,18 @@
 import type { NextRequest } from 'next/server';
 import { SETTLE_AMOUNT_CENTS } from '@/lib/agents/fallback';
 import { runNegotiation } from '@/lib/agents/negotiate';
-import { runLiveNegotiation } from '@/lib/live/negotiate';
+import { runDeterministicNegotiation, runLiveNegotiation } from '@/lib/live/negotiate';
 import { researchConfigured } from '@/lib/live/research';
 import { logEvent, snapshot, store } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
+
+/** The §11.1 fixture job, which keeps its rigged scripted transcript. */
+function isSeededPanelJob(deal: { research?: { spec: { title: string; scope: string; category: string } } }) {
+  const spec = deal.research?.spec;
+  if (!spec) return true;
+  return spec.category === 'electrical' && /\b(200a|panel)\b/i.test(`${spec.title} ${spec.scope}`);
+}
 
 const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 // 600-900ms between turns reads as thinking and gives the presenter room to
@@ -71,6 +78,24 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
                 ? `Agents agreed at ${usd(settledCents)} with ${next.value.vendor.name}.`
                 : `No agreement inside three rounds; best available from ${next.value.vendor.name} is ${usd(settledCents)}.`,
             );
+          } else if (!forceScripted && deal.research && !isSeededPanelJob(deal)) {
+            // No API key, but we still have research for a real user request.
+            // Negotiate deterministically over those numbers instead of
+            // replaying the seeded electrical transcript at an unrelated job.
+            send({ type: 'research', research: deal.research });
+            const iter = runDeterministicNegotiation(
+              deal.research,
+              deal.mandateSnapshot.maxAmountCents,
+            );
+            let next = iter.next();
+            while (!next.done) {
+              deal.transcript.push(next.value);
+              snapshot();
+              send({ type: 'turn', turn: next.value });
+              await pace();
+              next = iter.next();
+            }
+            settledCents = next.value.settledCents;
           } else {
             for await (const turn of runNegotiation(deal, { forceScripted })) {
               deal.transcript.push(turn);

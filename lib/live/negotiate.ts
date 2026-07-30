@@ -213,3 +213,68 @@ export async function* runLiveNegotiation(
 
   return { turns, settledCents, vendor, agreed };
 }
+
+/**
+ * Deterministic negotiation over researched numbers, with no LLM call.
+ *
+ * Used when we have research (live or simulated) but no API key. It reads the
+ * actual job, so a request for a sofa produces a negotiation about a sofa
+ * rather than replaying the seeded electricians. Converges on the cheapest
+ * vendor's floor the same way the LLM path does.
+ */
+export function* runDeterministicNegotiation(
+  research: MarketResearch,
+  buyerCeilingCents: number,
+): Generator<Turn, LiveNegotiationResult> {
+  const vendor = [...research.vendors].sort((a, b) => a.floorCents - b.floorCents)[0];
+  const floor = vendor.floorCents;
+  const what = research.spec.title;
+  const where = research.spec.location !== 'unspecified' ? ` in ${research.spec.location}` : '';
+  const by = research.spec.deadline;
+
+  // Open below the ceiling, concede toward the floor, settle at the floor.
+  const open = Math.max(Math.round(floor * 0.6), Math.round(buyerCeilingCents * 0.75));
+  const counter = Math.round(floor * 1.25);
+  const second = Math.round((open + floor) / 2);
+
+  const now = Date.now();
+  const script: Array<Omit<Turn, 'ts'>> = [
+    {
+      speaker: 'buyer_agent',
+      text: `We need ${what}${where}, completed by ${by}. Opening at ${usd(open)} for the full scope.`,
+      offerCents: open,
+    },
+    {
+      speaker: 'vendor_agent',
+      text: `${usd(open)} is under our cost on this one. ${vendor.rationale} We are at ${usd(counter)}.`,
+      offerCents: counter,
+    },
+    {
+      speaker: 'buyer_agent',
+      text: `${usd(counter)} is more than this scope supports. We can move to ${usd(second)} with flexible scheduling.`,
+      offerCents: second,
+    },
+    {
+      speaker: 'vendor_agent',
+      text: `With the flexible window I can come down to ${usd(floor)}, but that is our floor for ${what}.`,
+      offerCents: floor,
+    },
+    {
+      speaker: 'buyer_agent',
+      text:
+        floor > buyerCeilingCents
+          ? `Accepting ${usd(floor)} as best available terms. That exceeds my ${usd(buyerCeilingCents)} mandate ceiling, so I am escalating to a human approver before any payment moves.`
+          : `Accepting ${usd(floor)}. That is within my ${usd(buyerCeilingCents)} authorization, so I can settle this now.`,
+      offerCents: floor,
+    },
+  ];
+
+  const turns: Turn[] = [];
+  for (const t of script) {
+    const turn: Turn = { ...t, ts: now + turns.length };
+    turns.push(turn);
+    yield turn;
+  }
+
+  return { turns, settledCents: floor, vendor, agreed: true };
+}

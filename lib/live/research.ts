@@ -160,30 +160,77 @@ async function liveResearch(spec: JobSpec): Promise<MarketResearch> {
   };
 }
 
-/** Fixture-backed research, used whenever the live path can't run. */
+/**
+ * Fixture-backed research, used whenever the live path can't run.
+ *
+ * The seeded electrical job keeps its rigged §11.1 vendors so the scripted
+ * demo is untouched. Any OTHER job gets generic vendors scaled to whatever
+ * budget the requester stated, because replaying "Bright Electric" and a
+ * permit argument at someone who asked for a sofa reads as broken.
+ */
 function simulatedResearch(spec: JobSpec, note: string): MarketResearch {
+  const isSeededElectrical =
+    spec.category === 'electrical' && /\b(200a|panel)\b/i.test(`${spec.title} ${spec.scope}`);
+
+  if (isSeededElectrical) {
+    return {
+      spec,
+      vendors: [
+        {
+          name: 'Bright Electric',
+          sources: [],
+          quoteLowCents: 85000,
+          quoteHighCents: 96000,
+          floorCents: 85000,
+          rationale: 'Seeded fixture vendor. Permit and second electrician on a 200A cutover.',
+        },
+        {
+          name: 'Delta Contracting',
+          sources: [],
+          quoteLowCents: 92000,
+          quoteHighCents: 110000,
+          floorCents: 92000,
+          rationale: 'Seeded fixture vendor. Higher rate, faster scheduling.',
+        },
+      ],
+      marketLowCents: 85000,
+      marketHighCents: 110000,
+      sources: [],
+      simulated: true,
+      note,
+    };
+  }
+
+  // Anchor on the stated budget so the numbers are in the right order of
+  // magnitude for the actual request. Cheapest floor lands just above the
+  // budget, so the mandate breach still demonstrates, without pretending a
+  // sofa costs what a panel upgrade costs.
+  const anchor = spec.budgetCents ?? 80000;
+  const cheapFloor = Math.round(anchor * 1.06);
+  const trade = spec.category === 'general' ? 'supplier' : spec.category;
+
   return {
     spec,
     vendors: [
       {
-        name: 'Bright Electric',
+        name: `${trade.replace(/\b\w/g, (c) => c.toUpperCase())} Co.`,
         sources: [],
-        quoteLowCents: 85000,
-        quoteHighCents: 96000,
-        floorCents: 85000,
-        rationale: 'Seeded fixture vendor. Permit and second electrician on a 200A cutover.',
+        quoteLowCents: cheapFloor,
+        quoteHighCents: Math.round(cheapFloor * 1.35),
+        floorCents: cheapFloor,
+        rationale: `Simulated vendor for ${spec.title}. No live research was available, so these figures are anchored on the stated budget, not on market data.`,
       },
       {
-        name: 'Delta Contracting',
+        name: 'Second Source Ltd.',
         sources: [],
-        quoteLowCents: 92000,
-        quoteHighCents: 110000,
-        floorCents: 92000,
-        rationale: 'Seeded fixture vendor. Higher rate, faster scheduling.',
+        quoteLowCents: Math.round(cheapFloor * 1.2),
+        quoteHighCents: Math.round(cheapFloor * 1.6),
+        floorCents: Math.round(cheapFloor * 1.2),
+        rationale: 'Simulated alternate vendor. Higher price, shorter lead time.',
       },
     ],
-    marketLowCents: 85000,
-    marketHighCents: 110000,
+    marketLowCents: cheapFloor,
+    marketHighCents: Math.round(cheapFloor * 1.6),
     sources: [],
     simulated: true,
     note,
