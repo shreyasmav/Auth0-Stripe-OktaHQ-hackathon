@@ -30,6 +30,9 @@ export type Job = {
   scope: string;
   deadline: string;
   createdAt: number;
+  // Live path (lib/live/*): the parsed spec behind this job. Optional so
+  // fixture-seeded jobs and older snapshots stay valid.
+  spec?: import('./live/types').JobSpec;
 };
 
 export type Turn = {
@@ -61,6 +64,9 @@ export type Deal = {
   paymentIntentId?: string;
   applicationFeeCents?: number;
   createdAt: number;
+  // Live path: the sourced vendor/market research this negotiation ran on.
+  // Absent on fixture-driven deals.
+  research?: import('./live/types').MarketResearch;
 };
 
 export type Approval = {

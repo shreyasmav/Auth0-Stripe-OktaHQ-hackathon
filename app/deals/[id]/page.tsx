@@ -8,6 +8,8 @@ import ApprovalCard from '@/components/ApprovalCard';
 import PaymentPanel, { type PayResult } from '@/components/PaymentPanel';
 import TokenDrawer from '@/components/TokenDrawer';
 import EventFeed from '@/components/EventFeed';
+import ResearchPanel from '@/components/ResearchPanel';
+import type { MarketResearch } from '@/lib/live/types';
 
 // Display names for the fixed seed orgs. Server data stays authoritative
 // for everything that matters; this is presentation only.
@@ -39,6 +41,7 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
   const [approval, setApproval] = useState<Approval | null>(null);
   const [payment, setPayment] = useState<PayResult | null>(null);
   const [warn, setWarn] = useState<string | null>(null);
+  const [research, setResearch] = useState<MarketResearch | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -56,6 +59,7 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
           setDeal(data.deal);
           setApproval(data.approval ?? null);
           setTurns(data.deal.transcript ?? []);
+          if (data.deal.research) setResearch(data.deal.research);
         } else if (alive) {
           setWarn(`Could not load deal ${id} (HTTP ${res.status}). Trying the live stream anyway.`);
         }
@@ -75,8 +79,11 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
         try {
           const msg = JSON.parse(ev.data) as
             | { type: 'turn'; turn: Turn }
+            | { type: 'research'; research: MarketResearch }
             | { type: 'state'; deal: Deal };
-          if (msg.type === 'turn' && msg.turn) {
+          if (msg.type === 'research' && msg.research) {
+            setResearch(msg.research);
+          } else if (msg.type === 'turn' && msg.turn) {
             setTurns((prev) => [...prev, msg.turn]);
           } else if (msg.type === 'state' && msg.deal) {
             streamDone = true;
@@ -104,7 +111,8 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
     };
   }, [id]);
 
-  const vendorName = deal ? (ORG_NAMES[deal.vendorOrgId] ?? deal.vendorOrgId) : 'Vendor';
+  const researchedVendor = research?.vendors?.[0]?.name;
+  const vendorName = researchedVendor ?? (deal ? (ORG_NAMES[deal.vendorOrgId] ?? deal.vendorOrgId) : 'Vendor');
   const buyerName = deal ? (ORG_NAMES[deal.buyerOrgId] ?? deal.buyerOrgId) : 'Buyer';
   const ceiling = deal?.mandateSnapshot?.maxAmountCents ?? 80000;
 
@@ -160,6 +168,11 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
       <div className="grid grid-cols-3 gap-6">
         {/* Left 2/3: the transcript. */}
         <div className="col-span-2 h-[calc(100vh-13rem)]">
+          {research && (
+            <div className="mb-4">
+              <ResearchPanel research={research} />
+            </div>
+          )}
           <Transcript turns={turns} negotiating={deal?.state === 'negotiating' || deal === null} />
         </div>
 

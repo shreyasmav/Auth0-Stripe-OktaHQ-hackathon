@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { SETTLE_AMOUNT_CENTS } from '@/lib/agents/fallback';
 import { runNegotiation } from '@/lib/agents/negotiate';
+import { runLiveNegotiation } from '@/lib/live/negotiate';
+import { researchConfigured } from '@/lib/live/research';
 import { logEvent, snapshot, store } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +13,13 @@ const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const pace = () => new Promise((resolve) => setTimeout(resolve, 600 + Math.floor(Math.random() * 300)));
 
 // GET /api/deals/[id]/negotiate -> SSE stream of negotiation turns.
-// ?scripted=1 forces the fallback transcript. Reachable in one second from a
+//
+// Two paths, chosen per deal:
+//   live      - the deal carries sourced research and an API key is present;
+//               the agents negotiate freely and settle wherever the real
+//               economics land, above OR below the mandate ceiling.
+//   simulated - the rigged §11.1 ladder that always settles at $850.
+// ?scripted=1 forces the simulated path. Reachable in one second from a
 // podium, per §11.3.
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -19,6 +27,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (!deal) return Response.json({ error: 'deal_not_found' }, { status: 404 });
 
   const forceScripted = new URL(req.url).searchParams.get('scripted') === '1';
+  const useLive =
+    !forceScripted && researchConfigured() && Boolean(deal.research) && deal.research?.simulated === false;
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
@@ -34,14 +44,43 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
             await pace();
           }
         } else {
-          for await (const turn of runNegotiation(deal, { forceScripted })) {
-            deal.transcript.push(turn);
-            snapshot();
-            send({ type: 'turn', turn });
-            await pace();
+          let settledCents = SETTLE_AMOUNT_CENTS;
+
+          if (useLive && deal.research) {
+            send({ type: 'research', research: deal.research });
+            const iter = runLiveNegotiation(
+              deal.research,
+              deal.mandateSnapshot.maxAmountCents,
+              deal.id,
+            );
+            // Drive the generator by hand so we can capture its return value,
+            // which carries the real settle amount.
+            let next = await iter.next();
+            while (!next.done) {
+              const turn = next.value;
+              deal.transcript.push(turn);
+              snapshot();
+              send({ type: 'turn', turn });
+              await pace();
+              next = await iter.next();
+            }
+            settledCents = next.value.settledCents;
+            logEvent(
+              'agent',
+              next.value.agreed
+                ? `Agents agreed at ${usd(settledCents)} with ${next.value.vendor.name}.`
+                : `No agreement inside three rounds; best available from ${next.value.vendor.name} is ${usd(settledCents)}.`,
+            );
+          } else {
+            for await (const turn of runNegotiation(deal, { forceScripted })) {
+              deal.transcript.push(turn);
+              snapshot();
+              send({ type: 'turn', turn });
+              await pace();
+            }
           }
 
-          deal.amountCents = SETTLE_AMOUNT_CENTS;
+          deal.amountCents = settledCents;
           if (deal.amountCents > deal.mandateSnapshot.maxAmountCents) {
             deal.state = 'awaiting_approval';
             logEvent(
@@ -49,8 +88,9 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
               `Deal ${deal.id} settled at ${usd(deal.amountCents)}, above the ${usd(deal.mandateSnapshot.maxAmountCents)} mandate ceiling. Human approval required.`,
             );
           } else {
-            // Within-mandate branch (§11.2). Proves the ceiling actually gates
-            // rather than always firing.
+            // Within-mandate branch (§11.2). On the live path this fires
+            // whenever the real economics land under the ceiling - it is a
+            // genuine outcome, not a branch that never runs.
             deal.state = 'settled_within_mandate';
             logEvent(
               'agent',
