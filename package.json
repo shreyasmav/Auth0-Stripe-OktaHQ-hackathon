@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "node -e \"fetch('http://localhost:3000/api/seed',{method:'POST'}).then(r=>console.log('seeded',r.status))\"",
+    "demo:check": "node scripts/demo-check.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

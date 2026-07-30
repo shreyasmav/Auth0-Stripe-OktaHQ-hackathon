@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
+/*
+  Design system for the Mandate demo UI.
+  Near-black stage, off-white type, one violet accent.
+  Green is money. Red is a mandate breach. Amber is mock/warning.
+  Built for a projector: big type, high contrast, no subtlety.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0a0a0f;
+  --raised: #12121a;
+  --inset: #0d0d14;
+  --line: #232332;
+  --ink: #ececf3;
+  --dim: #9595a8;
+  --accent: #8b7bff;
+  --accent-deep: #5b4bdb;
+  --money: #4ade80;
+  --danger: #ff4d5e;
+  --warn: #fbbf24;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: var(--bg);
+  --color-raised: var(--raised);
+  --color-inset: var(--inset);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-dim: var(--dim);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-money: var(--money);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  /* JetBrains-adjacent mono stack for numbers. No font downloads. */
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(60% 40% at 50% 0%, rgba(139, 123, 255, 0.07), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  min-height: 100vh;
 }
+
+::selection {
+  background: var(--accent-deep);
+  color: var(--ink);
+}
+
+/* Quiet scrollbars for the transcript and event feed. */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+
+/* Each transcript turn fades in once. */
+@keyframes turn-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.turn-in {
+  animation: turn-in 380ms ease-out both;
+}
+
+/* The mandate breach beat: one shake plus one red shockwave. Runs once. */
+@keyframes breach-shake {
+  0%, 100% { transform: none; }
+  15% { transform: translateX(-7px); }
+  30% { transform: translateX(7px); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(5px); }
+  75% { transform: translateX(-2px); }
+}
+@keyframes breach-glow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0.6); }
+  100% { box-shadow: 0 0 0 22px rgba(255, 77, 94, 0); }
+}
+.breach-once {
+  animation: breach-shake 550ms ease, breach-glow 950ms ease-out;
+}
+
+/* Waiting-for-approver dots. */
+@keyframes dot-blink {
+  0%, 80%, 100% { opacity: 0.25; }
+  40% { opacity: 1; }
+}
+.dot {
+  animation: dot-blink 1.2s infinite both;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
