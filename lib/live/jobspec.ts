@@ -11,17 +11,39 @@ import type { JobSpec } from './types';
 const MODEL = 'claude-opus-5';
 const PARSE_TIMEOUT_MS = 30_000;
 
+/**
+ * Fixed category vocabulary. Left unconstrained the model drifts across runs
+ * ("Electrical", "electrical services"), and a mandate whose categories list
+ * is ['electrical','hvac'] can only be checked against exact values.
+ */
+export const CATEGORIES = [
+  'electrical',
+  'hvac',
+  'plumbing',
+  'roofing',
+  'exterior cleaning',
+  'cleaning',
+  'painting',
+  'grounds',
+  'security',
+  'general',
+] as const;
+
 const SPEC_SCHEMA = {
   type: 'object',
   properties: {
     title: { type: 'string' },
-    category: { type: 'string' },
+    category: { type: 'string', enum: CATEGORIES },
     scope: { type: 'string' },
     location: { type: 'string' },
     deadline: { type: 'string' },
     quantity: { type: 'string' },
+    budget_usd: {
+      type: ['number', 'null'],
+      description: 'Budget ceiling in US dollars if the requester stated one, else null.',
+    },
   },
-  required: ['title', 'category', 'scope', 'location', 'deadline'],
+  required: ['title', 'category', 'scope', 'location', 'deadline', 'budget_usd'],
   additionalProperties: false,
 } as const;
 
@@ -48,6 +70,16 @@ export function heuristicSpec(rawText: string): JobSpec {
     : 'general';
 
   const isoDate = rawText.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
+
+  // "under $3,000" / "budget of 2.5k" / "no more than $800" / "max $1200"
+  const budgetMatch = rawText.match(
+    /(?:budget(?:\s+of)?|under|below|max(?:imum)?|no more than|up to|cap(?:ped)?\s+at|within)\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(k\b)?/i,
+  );
+  let budgetCents: number | undefined;
+  if (budgetMatch) {
+    const n = parseFloat(budgetMatch[1].replace(/,/g, ''));
+    if (Number.isFinite(n) && n > 0) budgetCents = Math.round(n * (budgetMatch[2] ? 1000 : 1) * 100);
+  }
   // Match a place after in/at/near, skipping determiners and possessives so
   // "at our Denver CO site" still yields "Denver CO". Trailing common nouns
   // ("site", "office") are dropped.
@@ -70,6 +102,7 @@ export function heuristicSpec(rawText: string): JobSpec {
     scope: rawText.trim(),
     location,
     deadline: isoDate ?? 'ASAP',
+    budgetCents,
     rawText,
   };
 }
@@ -89,7 +122,11 @@ export async function parseJobSpec(rawText: string): Promise<JobSpec> {
             content: [
               `Extract a structured procurement request from this text. Do not invent`,
               `details that are not present - if the location or deadline is not stated,`,
-              `say "unspecified" and "ASAP" respectively.`,
+              `say "unspecified" and "ASAP" respectively. For budget_usd, use the`,
+              `spending limit the requester stated ("under $3,000", "budget of 2.5k",`,
+              `"no more than $800"); if they named no figure, return null. A price`,
+              `they expect to pay is not a limit - only return a number when it reads`,
+              `as a cap.`,
               ``,
               rawText,
             ].join('\n'),
@@ -101,11 +138,21 @@ export async function parseJobSpec(rawText: string): Promise<JobSpec> {
 
     if (res.stop_reason === 'refusal') return heuristicSpec(rawText);
 
-    const parsed = JSON.parse(firstText(res)) as Omit<JobSpec, 'rawText'>;
+    const parsed = JSON.parse(firstText(res)) as Omit<JobSpec, 'rawText' | 'budgetCents'> & {
+      budget_usd?: number | null;
+    };
+    const budgetCents =
+      typeof parsed.budget_usd === 'number' && parsed.budget_usd > 0
+        ? Math.round(parsed.budget_usd * 100)
+        : undefined;
     // The model happily returns "Electrical". Mandate categories are lowercase
     // (see BUYER_MANDATE), so anything compared against them must be too, or a
     // category check silently never matches.
-    return { ...parsed, category: parsed.category.trim().toLowerCase(), rawText };
+    const raw = parsed.category.trim().toLowerCase();
+    const category = (CATEGORIES as readonly string[]).includes(raw)
+      ? raw
+      : (CATEGORIES as readonly string[]).find((c) => raw.includes(c) || c.includes(raw)) ?? 'general';
+    return { ...parsed, category, budgetCents, rawText };
   } catch {
     return heuristicSpec(rawText);
   }

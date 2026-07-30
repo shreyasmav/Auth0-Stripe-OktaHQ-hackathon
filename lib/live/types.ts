@@ -10,6 +10,11 @@ export type JobSpec = {
   location: string; // free text: "Austin TX", "suite 300, Chicago"
   deadline: string;
   quantity?: string;
+  /**
+   * Budget ceiling the requester stated, in cents. Drives this deal's mandate
+   * ceiling when present. Absent when they named no number.
+   */
+  budgetCents?: number;
   /** Verbatim user input. Never paraphrased away, so the UI can show it. */
   rawText: string;
 };
