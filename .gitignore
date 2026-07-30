@@ -44,3 +44,7 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# ...but the template itself is checked in (CLAUDE.md §4). Must stay last:
+# a negation only works if no later pattern re-ignores the file.
+!.env.example
