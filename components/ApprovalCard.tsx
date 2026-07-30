@@ -98,6 +98,28 @@ export default function ApprovalCard({
     return () => clearInterval(t);
   }, [approval, onApproval]);
 
+  const [deciding, setDeciding] = useState(false);
+
+  /** Resolve the approval from this page. Same endpoint the phone screen posts
+   *  to, so the downstream gate is byte-identical either way. */
+  async function decide(action: 'approved' | 'denied') {
+    if (!approval || deciding) return;
+    setDeciding(true);
+    try {
+      const res = await fetch(`/api/approvals/${approval.id}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { approval: Approval };
+        if (data.approval) onApproval(data.approval);
+      }
+    } finally {
+      setDeciding(false);
+    }
+  }
+
   // QR code for the phone-facing approval screen.
   const approvalId = approval?.id;
   useEffect(() => {
@@ -202,6 +224,31 @@ export default function ApprovalCard({
             <span className="dot inline-block h-2 w-2 rounded-full bg-warn" />
             <span className="ml-1">waiting for approver...</span>
           </div>
+
+          {/* Approve in place. The QR below is the phone-facing path and the
+              honest demo beat, but requiring a tab switch to resolve every
+              approval made the flow feel stalled. */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void decide('approved')}
+              disabled={deciding}
+              className="flex-1 rounded-lg bg-money px-4 py-2.5 text-sm font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {deciding ? 'Authorizing...' : 'Approve here'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void decide('denied')}
+              disabled={deciding}
+              className="rounded-lg border border-danger/60 px-4 py-2.5 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+            >
+              Deny
+            </button>
+          </div>
+          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-dim/50">
+            or scan to approve from a phone
+          </p>
           {qr && (
             <div className="flex justify-center rounded-lg bg-white p-3">
               {/* Data URI QR: next/image adds nothing here. */}

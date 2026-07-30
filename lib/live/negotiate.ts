@@ -15,7 +15,11 @@ import { canRead } from '../fga';
 
 const MODEL = 'claude-opus-5';
 const TURN_TIMEOUT_MS = 30_000;
-const MAX_ROUNDS = 3;
+// Keep haggling while there is a chance of landing under the ceiling. The
+// wall-clock budget is what actually stops it: escalating to a human is the
+// last resort, not the third move.
+const MAX_ROUNDS = 6;
+const NEGOTIATION_BUDGET_MS = 60_000;
 
 const TURN_SCHEMA = {
   type: 'object',
@@ -124,7 +128,9 @@ export async function* runLiveNegotiation(
   buyerCeilingCents: number,
   dealId: string,
 ): AsyncGenerator<Turn, LiveNegotiationResult> {
-  const vendor = [...research.vendors].sort((a, b) => a.floorCents - b.floorCents)[0];
+  const ranked = [...research.vendors].sort((a, b) => a.floorCents - b.floorCents);
+  let vendorIdx = 0;
+  let vendor = ranked[0];
   const buyerSeesCeiling = await canRead('buyer_agent', dealId, 'view_budget_ceiling');
   const vendorSeesFloor = await canRead('vendor_agent', dealId, 'view_vendor_floor');
   const buyerSeesFloor = await canRead('buyer_agent', dealId, 'view_vendor_floor');
@@ -147,18 +153,21 @@ export async function* runLiveNegotiation(
     .filter(Boolean)
     .join(' ');
 
-  const vendorSystem = [
-    `You are a sales agent for ${vendor.name}.`,
-    jobLine,
-    marketLine,
-    vendorSeesFloor
-      ? `Your walk-away price is ${usd(vendor.floorCents)} - never agree below it. Your justification: ${vendor.rationale}`
-      : `You do not have visibility into your walk-away price.`,
-    vendorSeesCeiling ? `` : `You do NOT know the buyer's budget ceiling. Do not ask for it or guess it aloud.`,
-    `Defend your price with real costs. Be concise and specific.`,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const buildVendorSystem = (v: VendorLead) =>
+    [
+      `You are a sales agent for ${v.name}.`,
+      jobLine,
+      marketLine,
+      vendorSeesFloor
+        ? `Your walk-away price is ${usd(v.floorCents)} - never agree below it. Your justification: ${v.rationale}`
+        : `You do not have visibility into your walk-away price.`,
+      vendorSeesCeiling ? `` : `You do NOT know the buyer's budget ceiling. Do not ask for it or guess it aloud.`,
+      `Defend your price with real costs, but you want this deal: if the buyer offers something that genuinely lowers your cost, pass the saving on. Be concise and specific.`,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+  let vendorSystem = buildVendorSystem(vendor);
 
   const turns: Turn[] = [];
   const emit = (turn: Turn) => {
@@ -166,17 +175,22 @@ export async function* runLiveNegotiation(
     return turn;
   };
 
+  const startedAt = Date.now();
+  const outOfTime = () => Date.now() - startedAt > NEGOTIATION_BUDGET_MS;
+
   let settledCents = vendor.floorCents;
   let agreed = false;
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const buyer = await speak(
-      buyerSystem,
-      turns,
+    const affordableSoFar = settledCents <= buyerCeilingCents;
+    const instruction =
       round === 0
         ? `Open the negotiation with your first offer.`
-        : `Respond to the vendor's last offer. Close if the terms are acceptable.`,
-    );
+        : affordableSoFar
+          ? `The vendor is at or under your ceiling. Close the deal.`
+          : `Their price is still above what you can authorize. Keep negotiating: trade something concrete (flexible scheduling, prompt payment, doing prep work yourself, a smaller scope) for a lower number. Do NOT escalate to a human yet - you have more rounds.`;
+
+    const buyer = await speak(buyerSystem, turns, instruction);
     yield emit({
       speaker: 'buyer_agent',
       text: buyer.message,
@@ -192,7 +206,7 @@ export async function* runLiveNegotiation(
     const seller = await speak(
       vendorSystem,
       turns,
-      `Respond to the buyer's offer. Accept it if it is at or above your walk-away price.`,
+      `Respond to the buyer's offer. Accept it if it is at or above your walk-away price. If it is below, counter as low as you genuinely can.`,
     );
     yield emit({
       speaker: 'vendor_agent',
@@ -200,12 +214,55 @@ export async function* runLiveNegotiation(
       offerCents: seller.offerCents,
       ts: Date.now(),
     });
+    settledCents = seller.offerCents;
     if (seller.accepts) {
-      settledCents = seller.offerCents;
       agreed = true;
       break;
     }
-    settledCents = seller.offerCents;
+
+    // Landed under the ceiling: stop haggling, the buyer can authorize this.
+    if (settledCents <= buyerCeilingCents) {
+      agreed = true;
+      break;
+    }
+
+    // This vendor cannot go low enough. Try the next cheapest before giving up.
+    if (settledCents > buyerCeilingCents && vendorIdx + 1 < ranked.length && !outOfTime()) {
+      vendorIdx += 1;
+      vendor = ranked[vendorIdx];
+      vendorSystem = buildVendorSystem(vendor);
+      yield emit({
+        speaker: 'system',
+        text: `${ranked[vendorIdx - 1].name} will not go under ${usd(buyerCeilingCents)}. Opening a parallel line with ${vendor.name}.`,
+        ts: Date.now(),
+      });
+      settledCents = vendor.floorCents;
+      continue;
+    }
+
+    if (outOfTime()) {
+      yield emit({
+        speaker: 'system',
+        text: `No affordable terms after ${Math.round((Date.now() - startedAt) / 1000)}s across ${vendorIdx + 1} vendor${vendorIdx ? 's' : ''}. Referring the best available price to a human.`,
+        ts: Date.now(),
+      });
+      break;
+    }
+  }
+
+  // Exhausted the rounds without getting under the ceiling: hand the human the
+  // cheapest real price found, not the last number on the table.
+  if (settledCents > buyerCeilingCents) {
+    const cheapest = ranked.reduce((a, b) => (a.floorCents <= b.floorCents ? a : b));
+    if (cheapest.floorCents < settledCents) {
+      vendor = cheapest;
+      settledCents = cheapest.floorCents;
+      yield emit({
+        speaker: 'system',
+        text: `Best available across all vendors: ${usd(settledCents)} from ${cheapest.name}.`,
+        ts: Date.now(),
+      });
+    }
   }
 
   // Never settle below the vendor's real floor, whatever the transcript said.

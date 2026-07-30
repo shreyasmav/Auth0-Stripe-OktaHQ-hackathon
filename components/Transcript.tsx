@@ -48,9 +48,12 @@ export default function Transcript({
   return (
     <div className="flex h-full flex-col rounded-xl border border-line bg-raised">
       <div className="flex items-center justify-between border-b border-line px-6 py-4">
-        <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">
-          Negotiation transcript
-        </h2>
+        <div>
+          <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">
+            Negotiation transcript
+          </h2>
+          <span className="fig-label">FIG. 02 &middot; AGENT TO AGENT &middot; REV A</span>
+        </div>
         {negotiating && (
           <span className="flex items-center gap-1.5 font-mono text-xs text-accent">
             live

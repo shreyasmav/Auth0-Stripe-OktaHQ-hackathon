@@ -11,7 +11,7 @@ export default function ResearchPanel({ research }: { research: MarketResearch }
   return (
     <section className="rounded-xl border border-line bg-raised p-5">
       <div className="mb-3 flex items-center gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-dim">Sourcing</h2>
+        <h2 className="eyebrow">Sourcing</h2>
         {research.simulated ? (
           <span className="rounded bg-warn/15 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-warn">
             Simulated
@@ -23,6 +23,9 @@ export default function ResearchPanel({ research }: { research: MarketResearch }
         )}
       </div>
 
+      <div className="mb-3">
+        <span className="fig-label">FIG. 01 &middot; MARKET SURVEY &middot; N.T.S.</span>
+      </div>
       {research.note && <p className="mb-3 text-sm text-dim">{research.note}</p>}
 
       <p className="mb-4 text-sm text-ink">

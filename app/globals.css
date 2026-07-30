@@ -7,17 +7,20 @@
   Built for a projector: big type, high contrast, no subtlety.
 */
 :root {
-  --bg: #0a0a0f;
-  --raised: #12121a;
-  --inset: #0d0d14;
-  --line: #232332;
-  --ink: #ececf3;
-  --dim: #9595a8;
-  --accent: #8b7bff;
-  --accent-deep: #5b4bdb;
-  --money: #4ade80;
-  --danger: #ff4d5e;
-  --warn: #fbbf24;
+  /* Palette lifted from adambiotech.com: near-black ground (#0a0a0a) with a
+     dark desaturated forest green (#243328 family) as the only brand accent.
+     Technical and editorial rather than SaaS-bright. */
+  --bg: #0a0a0a;
+  --raised: #121412;
+  --inset: #0e100e;
+  --line: #232a24;
+  --ink: #eceae4;
+  --dim: #8f958d;
+  --accent: #6f8f74;
+  --accent-deep: #243328;
+  --money: #7ba982;
+  --danger: #c4614f;
+  --warn: #c9a227;
 }
 
 @theme inline {
@@ -44,7 +47,7 @@ html {
 
 body {
   background:
-    radial-gradient(60% 40% at 50% 0%, rgba(139, 123, 255, 0.07), transparent 60%),
+    radial-gradient(70% 45% at 50% 0%, rgba(36, 51, 40, 0.55), transparent 65%),
     var(--bg);
   color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -101,8 +104,8 @@ body {
   75% { transform: translateX(-2px); }
 }
 @keyframes breach-glow {
-  0% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0.65); }
-  100% { box-shadow: 0 0 0 28px rgba(255, 77, 94, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(196, 97, 79, 0.6); }
+  100% { box-shadow: 0 0 0 28px rgba(196, 97, 79, 0); }
 }
 .breach-once {
   animation: breach-shake 550ms ease, breach-glow 950ms ease-out;
@@ -118,3 +121,37 @@ body {
 }
 .dot:nth-child(2) { animation-delay: 0.2s; }
 .dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* --- Drafting-annotation motif (adambiotech.com) ------------------------- */
+
+/* All-caps monospace eyebrow above a section heading. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* Technical callout, e.g. "FIG. 02 - NEGOTIATION - REV A". */
+.fig-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--dim);
+  opacity: 0.65;
+}
+
+/* Hairline rule that reads as a drawing border rather than a card edge. */
+.rule-technical {
+  border-color: var(--line);
+  border-style: solid;
+}
+
+/* Big-number-over-caption stat, the site's hero quad pattern. */
+.stat-figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
