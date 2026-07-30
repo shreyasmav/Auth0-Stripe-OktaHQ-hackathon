@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #0a0a0c;
+  color: #f2f2f5;
+}
+
+* {
+  border-color: #232330;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.turn-fade-in {
+  animation: fade-in 300ms ease-out;
+}
+
+@keyframes flash-breach {
+  0%,
+  100% {
+    background-color: rgba(255, 77, 79, 0.15);
+  }
+  50% {
+    background-color: rgba(255, 77, 79, 0.4);
+  }
+}
+
+.mandate-breach {
+  animation: flash-breach 700ms ease-in-out 2;
+}
