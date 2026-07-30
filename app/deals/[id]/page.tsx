@@ -173,7 +173,15 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
               <ResearchPanel research={research} />
             </div>
           )}
-          <Transcript turns={turns} negotiating={deal?.state === 'negotiating' || deal === null} />
+          <Transcript
+            turns={turns}
+            negotiating={deal?.state === 'negotiating' || deal === null}
+            emptyHint={
+              research && !research.simulated
+                ? 'Agents negotiating on live market data...'
+                : 'Opening the deal room...'
+            }
+          />
         </div>
 
         {/* Right 1/3: mandate, approval, payment, token, events. */}

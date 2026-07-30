@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Turn } from '@/lib/types';
 
 const usd = (c: number) =>
@@ -17,7 +17,27 @@ const SPEAKER_LABEL: Record<Turn['speaker'], string> = {
  * Offers render as inline mono badges. Each turn fades in once and the
  * pane keeps itself scrolled to the newest turn.
  */
-export default function Transcript({ turns, negotiating }: { turns: Turn[]; negotiating: boolean }) {
+/** Counts up so a slow live round is visibly progressing, not frozen. */
+function ElapsedCounter() {
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setSecs((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return <p className="font-mono text-xs text-dim/40">{secs}s elapsed</p>;
+}
+
+export default function Transcript({
+  turns,
+  negotiating,
+  emptyHint,
+}: {
+  turns: Turn[];
+  negotiating: boolean;
+  /** Shown while there are no turns yet. Live rounds take 15-30s each, and a
+   *  bare "opening..." with no elapsed feedback reads as a hung page. */
+  emptyHint?: string;
+}) {
   const paneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,10 +63,16 @@ export default function Transcript({ turns, negotiating }: { turns: Turn[]; nego
 
       <div ref={paneRef} className="flex-1 space-y-4 overflow-y-auto p-6">
         {turns.length === 0 && (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full flex-col items-center justify-center gap-3">
             <p className="font-mono text-sm uppercase tracking-[0.25em] text-dim/60">
-              Opening the deal room...
+              {emptyHint ?? 'Opening the deal room...'}
             </p>
+            <span className="flex items-center gap-1.5">
+              <span className="dot inline-block h-2 w-2 rounded-full bg-accent" />
+              <span className="dot inline-block h-2 w-2 rounded-full bg-accent" />
+              <span className="dot inline-block h-2 w-2 rounded-full bg-accent" />
+            </span>
+            <ElapsedCounter />
           </div>
         )}
 

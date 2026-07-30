@@ -105,7 +105,7 @@ export default function DashboardPage() {
                   disabled={opening !== null}
                   className="shrink-0 rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg transition-colors hover:bg-accent-deep hover:text-ink disabled:opacity-50"
                 >
-                  {opening === job.id ? 'Opening...' : 'Open deal room'}
+                  {opening === job.id ? 'Researching vendors...' : 'Open deal room'}
                 </button>
               </div>
             </div>
