@@ -19,11 +19,11 @@ export default function MandateBadge({
 }) {
   return (
     <div
-      className={`rounded-xl border p-5 transition-colors duration-300 ${
-        breached ? 'breach-once border-danger bg-danger/10' : 'border-line bg-raised'
+      className={`rounded-xl border p-6 transition-colors duration-300 ${
+        breached ? 'breach-once border-danger bg-danger/15' : 'border-line bg-raised'
       }`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <span
           className={`font-mono text-[11px] uppercase tracking-[0.25em] ${
             breached ? 'text-danger' : 'text-dim'
@@ -32,26 +32,30 @@ export default function MandateBadge({
           Mandate ceiling
         </span>
         {breached && (
-          <span className="rounded bg-danger px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-widest text-bg">
+          <span className="rounded-md bg-danger px-2.5 py-1 font-mono text-sm font-bold uppercase tracking-widest text-bg">
             Exceeded
           </span>
         )}
       </div>
 
       <div
-        className={`mt-1 font-mono text-5xl font-bold tabular-nums ${
+        className={`mt-1 font-mono text-6xl font-bold tabular-nums ${
           breached ? 'text-danger' : 'text-money'
         }`}
       >
         {usd(ceilingCents)}
       </div>
 
-      <div className="mt-4 flex items-baseline justify-between border-t border-line/60 pt-3">
+      <div
+        className={`mt-4 flex items-baseline justify-between border-t pt-3 ${
+          breached ? 'border-danger/30' : 'border-line/60'
+        }`}
+      >
         <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-dim">
           Current offer
         </span>
         <span
-          className={`font-mono text-2xl font-bold tabular-nums ${
+          className={`font-mono text-3xl font-bold tabular-nums ${
             breached
               ? 'text-danger'
               : offerCents !== undefined && offerCents > ceilingCents
@@ -64,8 +68,11 @@ export default function MandateBadge({
       </div>
 
       {breached && (
-        <p className="mt-3 text-sm font-medium leading-snug text-danger">
-          Settle exceeds the mandate. The agent holds no token that permits payment.
+        <p className="mt-3 text-base font-medium leading-snug text-danger">
+          {typeof offerCents === 'number' && offerCents > ceilingCents
+            ? `${usd(offerCents - ceilingCents)} over the mandate. `
+            : 'Settle exceeds the mandate. '}
+          The agent holds no token that permits payment.
         </p>
       )}
     </div>

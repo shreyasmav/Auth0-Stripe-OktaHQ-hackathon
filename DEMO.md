@@ -27,6 +27,14 @@ Reset first: `npm run seed`. Open /dashboard. Phone unlocked, on cellular.
 
 "Auth0 was provisioned from the terminal in one Stripe Projects command. Multi-user, monetized, and the agent never once touched money it wasn't mandated to spend."
 
+## Phone reachability (read before going on stage)
+
+The approval QR encodes the page origin. Open the app on the laptop via
+http://172.16.35.119:3000 (venue wifi IP), NOT localhost, so the phone can
+reach the approve page. Phone must be on the same wifi. If the venue wifi
+isolates clients, skip the QR and click the approval link on the laptop
+screen instead. The narrative is identical.
+
 ## Failure recovery
 
 - Negotiation slow or wifi dying: reload with `?scripted=1`.

@@ -43,14 +43,18 @@ export default function Transcript({ turns, negotiating }: { turns: Turn[]; nego
 
       <div ref={paneRef} className="flex-1 space-y-4 overflow-y-auto p-6">
         {turns.length === 0 && (
-          <p className="text-center text-dim/60">Opening the deal room...</p>
+          <div className="flex h-full items-center justify-center">
+            <p className="font-mono text-sm uppercase tracking-[0.25em] text-dim/60">
+              Opening the deal room...
+            </p>
+          </div>
         )}
 
         {turns.map((turn, i) => {
           if (turn.speaker === 'system') {
             return (
               <div key={i} className="turn-in text-center">
-                <span className="inline-block max-w-[85%] rounded-lg bg-inset px-4 py-2 font-mono text-sm text-dim">
+                <span className="inline-block max-w-[85%] rounded-lg border border-line/60 bg-inset px-4 py-2 font-mono text-base text-dim">
                   {turn.text}
                 </span>
               </div>
@@ -73,10 +77,10 @@ export default function Transcript({ turns, negotiating }: { turns: Turn[]; nego
                 >
                   {SPEAKER_LABEL[turn.speaker]}
                 </div>
-                <p className="text-lg leading-relaxed">{turn.text}</p>
+                <p className="text-xl leading-relaxed">{turn.text}</p>
                 {typeof turn.offerCents === 'number' && (
                   <span
-                    className={`mt-2.5 inline-block rounded-md px-2.5 py-1 font-mono text-base font-bold ${
+                    className={`mt-3 inline-block rounded-md px-3 py-1 font-mono text-lg font-bold tabular-nums ${
                       isBuyer ? 'bg-accent/20 text-accent' : 'bg-line text-ink'
                     }`}
                   >

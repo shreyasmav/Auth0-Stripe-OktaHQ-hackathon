@@ -22,36 +22,41 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="flex items-center gap-4 text-lg">
-        <div className="rounded-xl border border-line bg-raised px-6 py-4">
-          <div className="font-mono text-xs uppercase tracking-widest text-dim">Step 1</div>
+      <div className="flex items-stretch gap-4 text-lg">
+        <div className="w-60 rounded-xl border border-line bg-raised px-6 py-4 text-left transition-colors hover:border-accent/40">
+          <div className="font-mono text-xs uppercase tracking-widest text-accent">Step 1</div>
           <div className="mt-1 font-medium">Negotiate</div>
           <div className="mt-0.5 text-sm text-dim">Two agents, live transcript</div>
         </div>
-        <span className="text-2xl text-accent" aria-hidden>
+        <span className="self-center text-2xl text-accent" aria-hidden>
           &rarr;
         </span>
-        <div className="rounded-xl border border-line bg-raised px-6 py-4">
-          <div className="font-mono text-xs uppercase tracking-widest text-dim">Step 2</div>
+        <div className="w-60 rounded-xl border border-line bg-raised px-6 py-4 text-left transition-colors hover:border-accent/40">
+          <div className="font-mono text-xs uppercase tracking-widest text-accent">Step 2</div>
           <div className="mt-1 font-medium">Approve on your phone</div>
           <div className="mt-0.5 text-sm text-dim">Auth0 push, real deal terms</div>
         </div>
-        <span className="text-2xl text-accent" aria-hidden>
+        <span className="self-center text-2xl text-accent" aria-hidden>
           &rarr;
         </span>
-        <div className="rounded-xl border border-line bg-raised px-6 py-4">
-          <div className="font-mono text-xs uppercase tracking-widest text-dim">Step 3</div>
+        <div className="w-60 rounded-xl border border-line bg-raised px-6 py-4 text-left transition-colors hover:border-accent/40">
+          <div className="font-mono text-xs uppercase tracking-widest text-accent">Step 3</div>
           <div className="mt-1 font-medium">Paid via Stripe</div>
           <div className="mt-0.5 text-sm text-money">Split to vendor, fee to platform</div>
         </div>
       </div>
 
-      <Link
-        href="/dashboard"
-        className="rounded-xl bg-accent px-8 py-4 text-lg font-semibold text-bg transition-colors hover:bg-accent-deep hover:text-ink"
-      >
-        Open dashboard
-      </Link>
+      <div className="flex flex-col items-center gap-5">
+        <Link
+          href="/dashboard"
+          className="rounded-xl bg-accent px-8 py-4 text-lg font-semibold text-bg transition-colors hover:bg-accent-deep hover:text-ink"
+        >
+          Open dashboard
+        </Link>
+        <p className="font-mono text-xs uppercase tracking-[0.25em] text-dim/70">
+          Auth0 governs the mandate &middot; Stripe moves the money
+        </p>
+      </div>
     </div>
   );
 }

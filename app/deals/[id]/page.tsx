@@ -135,10 +135,12 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-4">
           <h1 className="text-2xl font-semibold tracking-tight">Deal room</h1>
-          <span className="text-dim">
+          <span className="text-lg text-dim">
             {buyerName} <span className="text-dim/50">vs</span> {vendorName}
           </span>
-          <span className="font-mono text-xs text-dim/60">{id}</span>
+          <span className="rounded-md border border-line bg-raised px-2 py-0.5 font-mono text-xs text-dim/70">
+            {id}
+          </span>
         </div>
         {displayState && (
           <span

@@ -87,7 +87,10 @@ export default function DashboardPage() {
           <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">Open requests</h2>
 
           {[...createdJobs, SEED_JOB_CARD].map((job) => (
-            <div key={job.id} className="rounded-xl border border-line bg-raised p-6">
+            <div
+              key={job.id}
+              className="rounded-xl border border-line bg-raised p-6 transition-colors hover:border-accent/40"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-medium">{job.title}</h3>
