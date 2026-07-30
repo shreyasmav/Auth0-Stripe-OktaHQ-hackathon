@@ -102,7 +102,10 @@ export async function parseJobSpec(rawText: string): Promise<JobSpec> {
     if (res.stop_reason === 'refusal') return heuristicSpec(rawText);
 
     const parsed = JSON.parse(firstText(res)) as Omit<JobSpec, 'rawText'>;
-    return { ...parsed, rawText };
+    // The model happily returns "Electrical". Mandate categories are lowercase
+    // (see BUYER_MANDATE), so anything compared against them must be too, or a
+    // category check silently never matches.
+    return { ...parsed, category: parsed.category.trim().toLowerCase(), rawText };
   } catch {
     return heuristicSpec(rawText);
   }

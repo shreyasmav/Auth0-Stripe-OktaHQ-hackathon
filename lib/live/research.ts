@@ -10,7 +10,10 @@ import { createMessage, firstText, type MessageLike } from './anthropic';
 import type { JobSpec, MarketResearch, SourceRef, VendorLead } from './types';
 
 const MODEL = 'claude-opus-5';
-const RESEARCH_TIMEOUT_MS = 90_000;
+// Opus 5 with web search + dynamic filtering routinely needs 2-3 minutes for
+// a multi-vendor sweep. Budget generously; the UI streams a placeholder while
+// this runs, and a timeout falls back to fixtures rather than failing.
+const RESEARCH_TIMEOUT_MS = 300_000;
 
 const RESEARCH_SCHEMA = {
   type: 'object',
@@ -105,9 +108,11 @@ async function liveResearch(spec: JobSpec): Promise<MarketResearch> {
     createMessage({
       model: MODEL,
       max_tokens: 8000,
-      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }],
+      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5 }],
       output_config: {
-        effort: 'medium',
+        // 'low' keeps the sweep to roughly one minute without measurably
+        // hurting the vendor list; raise it if quotes come back vague.
+        effort: 'low',
         format: { type: 'json_schema', schema: RESEARCH_SCHEMA },
       },
       messages: [{ role: 'user', content: prompt }],

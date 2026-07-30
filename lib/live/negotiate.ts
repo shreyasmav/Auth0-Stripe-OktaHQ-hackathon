@@ -41,6 +41,22 @@ function usd(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+/**
+ * Repairs escape artifacts the model leaves inside the JSON string field.
+ *
+ * Observed failure mode: it emits a doubled backslash before a unicode escape,
+ * so JSON.parse yields the literal text "\u2014" instead of an em dash. Decode
+ * those first - stripping the backslash instead would leave "u2014" in the
+ * transcript. Only then drop any lone backslashes that remain.
+ */
+function cleanMessage(text: string): string {
+  return text
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_m, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/\s*\\+\s*/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 async function speak(
   system: string,
   history: Turn[],
@@ -55,7 +71,9 @@ async function speak(
       model: MODEL,
       max_tokens: 1200,
       system,
-      output_config: { effort: 'low', format: { type: 'json_schema', schema: TURN_SCHEMA } },
+      // 'low' was observed emitting transposed fragments and stray backslashes
+      // inside the JSON string. 'medium' is clean and still sub-second per turn.
+      output_config: { effort: 'medium', format: { type: 'json_schema', schema: TURN_SCHEMA } },
       messages: [
         {
           role: 'user',
@@ -65,6 +83,9 @@ async function speak(
             instruction,
             `Reply with one or two sentences, the dollar figure you are putting on the table,`,
             `and whether you are accepting the other side's last offer.`,
+            `Write the message in plain ASCII only - use a comma or a period where you`,
+            `would reach for an em dash, and no typographic quotes or symbols. Non-ASCII`,
+            `punctuation has to be escaped in the JSON string and comes back corrupted.`,
           ].join('\n'),
         },
       ],
@@ -80,7 +101,7 @@ async function speak(
     accepts_previous: boolean;
   };
   return {
-    message: parsed.message,
+    message: cleanMessage(parsed.message),
     offerCents: Math.round(parsed.offer_usd * 100),
     accepts: parsed.accepts_previous,
   };
@@ -118,7 +139,7 @@ export async function* runLiveNegotiation(
     jobLine,
     marketLine,
     buyerSeesCeiling
-      ? `Your authorization ceiling is ${usd(buyerCeilingCents)}. You may not agree above it without human approval - if the vendor will not come under it, say so plainly and accept their best price on the record so a human can decide.`
+      ? `Your authorization ceiling is ${usd(buyerCeilingCents)}. Never state that number, or the fact that you have a ceiling at all, until you have made at least one counter-offer - revealing your budget early destroys your leverage. Open below the market range and negotiate. Only once the vendor has given a firm best price that you still cannot authorize should you say you need approval to go higher, and then accept their price on the record so a human can decide.`
       : `You do not have visibility into your authorization ceiling.`,
     buyerSeesFloor ? `` : `You do NOT know the vendor's walk-away price. Do not guess it aloud.`,
     `Negotiate in good faith toward a fair price. Be concise and specific.`,

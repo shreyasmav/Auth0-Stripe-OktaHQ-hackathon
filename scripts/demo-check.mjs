@@ -5,6 +5,10 @@
 
 const BASE = process.env.DEMO_BASE_URL || 'http://localhost:3000';
 
+// Settled amount, captured during the negotiate step and asserted against by
+// the gate and pay steps. Varies per run in live mode.
+let settledCents = 0;
+
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
@@ -92,17 +96,31 @@ await step('deal: POST /api/deals opens vs cheapest-floor vendor', async () => {
   const { res, data } = await call('POST', '/api/deals', { jobId });
   assert(res.ok, `HTTP ${res.status}`);
   assert(data?.deal?.id, 'no deal id returned');
-  assert(data.deal.vendorOrgId === 'org_bright', `vendor ${data.deal.vendorOrgId}, expected org_bright`);
+  // In simulated mode this is org_bright; in live mode it is a researched real
+  // company with a generated org id. Assert the invariant both share: a vendor
+  // was chosen and it carries the walk-away price the negotiation runs on.
+  assert(data.deal.vendorOrgId, 'no vendorOrgId on the deal');
+  assert(
+    typeof data.deal.research?.vendors?.[0]?.floorCents === 'number',
+    'deal carries no researched vendor floor',
+  );
   assert(data.deal.state === 'negotiating', `state ${data.deal.state}`);
   dealId = data.deal.id;
   return dealId;
 });
 
-await step('negotiate: SSE settles at 85000 above the 80000 ceiling', async () => {
+// The invariant is that the settle EXCEEDS the ceiling, not that it equals the
+// rigged 85000. In live mode the amount comes from real researched economics
+// and differs every run.
+await step('negotiate: SSE settles above the mandate ceiling', async () => {
   const { turns, finalDeal } = await consumeSse(`/api/deals/${dealId}/negotiate?scripted=1`);
   assert(turns >= 5, `only ${turns} turns streamed`);
   assert(finalDeal, 'no final state event');
-  assert(finalDeal.amountCents === 85000, `amountCents ${finalDeal.amountCents}`);
+  assert(
+    finalDeal.amountCents > finalDeal.mandateSnapshot.maxAmountCents,
+    `settle ${finalDeal.amountCents} should exceed ceiling ${finalDeal.mandateSnapshot.maxAmountCents}`,
+  );
+  settledCents = finalDeal.amountCents;
   assert(finalDeal.state === 'awaiting_approval', `state ${finalDeal.state}`);
   return `${turns} turns`;
 });
@@ -114,7 +132,7 @@ await step('gate: pay without approval returns 403 mandate_exceeded', async () =
   assert(res.status === 403, `HTTP ${res.status}, expected 403`);
   assert(data?.error === 'mandate_exceeded', `error ${data?.error}`);
   assert(data.ceiling === 80000, `ceiling ${data.ceiling}`);
-  assert(data.requested === 85000, `requested ${data.requested}`);
+  assert(data.requested === settledCents, `requested ${data.requested} != settled ${settledCents}`);
 });
 
 await step('approval: POST /api/approvals creates a pending approval', async () => {
@@ -140,7 +158,7 @@ await step('pay: elevated token clears the gate and captures payment', async () 
   });
   assert(res.ok, `HTTP ${res.status}: ${JSON.stringify(data)}`);
   assert(data?.deal?.state === 'paid', `deal state ${data?.deal?.state}`);
-  assert(data.payment?.amountCents === 85000, `amount ${data.payment?.amountCents}`);
+  assert(data.payment?.amountCents === settledCents, `amount ${data.payment?.amountCents} != settled ${settledCents}`);
   assert(data.payment.applicationFeeCents === 2550, `fee ${data.payment.applicationFeeCents}`);
   assert(data.payment.vendorNetCents === 82450, `vendor net ${data.payment.vendorNetCents}`);
   assert(data.payment.paymentIntentId, 'no paymentIntentId');
