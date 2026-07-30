@@ -56,7 +56,7 @@ export function snapshot() {
   }
 }
 
-/** Total reset back to seed fixtures. Must be instant — it runs between demo takes. */
+/** Total reset back to seed fixtures. Must be instant: it runs between demo takes. */
 export function resetStore() {
   const s = fresh();
   store.orgs = s.orgs;

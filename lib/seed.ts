@@ -1,6 +1,6 @@
 import type { Job, Mandate, Org } from './types';
 
-// §11.1 rigged numbers — the cheapest vendor floor ($850) sits ABOVE the buyer
+// §11.1 rigged numbers: the cheapest vendor floor ($850) sits ABOVE the buyer
 // ceiling ($800) so the negotiation always breaches the mandate. Load-bearing.
 export const BUYER_MANDATE: Mandate = {
   maxAmountCents: 80000,

@@ -8,7 +8,7 @@ export type Org = {
   tier: Tier;
   stripeCustomerId?: string;
   stripeAccountId?: string;      // vendors: Connect Express account
-  // vendor economics — never exposed to the buyer agent
+  // vendor economics, never exposed to the buyer agent
   hourlyRateCents?: number;
   floorCents?: number;
 };
@@ -71,7 +71,7 @@ export type Approval = {
   status: 'pending' | 'approved' | 'denied' | 'expired';
   authReqId?: string;            // CIBA
   bindingMessage: string;
-  authorizationDetails: unknown; // the RAR payload — render this in the UI
+  authorizationDetails: unknown; // the RAR payload, render this in the UI
   grantedToken?: string;         // elevated, single-use
   createdAt: number;
   resolvedAt?: number;
