@@ -25,7 +25,22 @@ Reset first: `npm run seed`. Open /dashboard. Phone unlocked, on cellular.
 
 ## Closer (10s)
 
-"Auth0 was provisioned from the terminal in one Stripe Projects command. Multi-user, monetized, and the agent never once touched money it wasn't mandated to spend."
+"This Auth0 tenant was provisioned from the terminal, at 5:12 this afternoon, with one command: stripe projects add auth0/client. Multi-user, monetized, and the agent never once touched money it wasn't mandated to spend."
+
+If a judge asks what is real: the Stripe charges are real test-mode PaymentIntents,
+visible in the dashboard with deal and approval ids in the metadata. The Auth0
+client is really provisioned through Stripe Projects. CIBA is coded but the tenant
+is not licensed for it, so approval runs over the front channel with the identical
+authorization model. FGA runs the same tuple checks in process rather than against
+the cloud store. Say all of that plainly, it reads as engineering judgment.
+
+## DO NOT RESTART THE DEV SERVER BEFORE THE DEMO
+
+Auth0 credentials landed in .env at 5:12pm. The running server started before
+that file existed, so it is still using the built-in demo user and every screen
+works. Restarting it makes auth0Configured() true, which switches the app to
+real Auth0 login, and the provisioned tenant has no localhost callback URL
+registered yet. That would break the demo. Wire real login after you present.
 
 ## Phone reachability (read before going on stage)
 
