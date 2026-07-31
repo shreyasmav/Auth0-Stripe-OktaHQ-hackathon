@@ -40,11 +40,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .data/
-.env.local
 
 .vercel
 .env*
 
 # ...but the template itself is checked in (CLAUDE.md §4). Must stay last:
 # a negation only works if no later pattern re-ignores the file.
+
+.projects/cache
+.projects/vault
+.projects/state.test.json
+.projects/state.local.test.json
+.env
+.env.*
 !.env.example

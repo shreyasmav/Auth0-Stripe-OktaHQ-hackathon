@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "project": {
+    "catalog": "prod",
+    "merchantId": "acct_1Tz3iNB77A3U7LFz",
+    "merchantDisplayName": "acct_1Tz3iNB77A3U7LFz",
+    "projectId": "project_61V8RxkmhbRlce63B16V8Rfk3YSQqkaMbO9tzdXdACJc",
+    "projectName": "agentmarketplace",
+    "initializedAt": "2026-07-31T00:08:52.807Z"
+  },
+  "providers": {},
+  "resources": {}
+}
