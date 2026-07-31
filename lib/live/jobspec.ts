@@ -8,7 +8,9 @@
 import { createMessage, firstText } from './anthropic';
 import type { JobSpec } from './types';
 
-const MODEL = 'claude-opus-5';
+// Structured extraction from one sentence: Haiku is several seconds faster
+// than Opus here and no less accurate. It rejects `effort`, so that is omitted.
+const MODEL = 'claude-haiku-4-5';
 const PARSE_TIMEOUT_MS = 30_000;
 
 /**
@@ -115,7 +117,7 @@ export async function parseJobSpec(rawText: string): Promise<JobSpec> {
       createMessage({
         model: MODEL,
         max_tokens: 2000,
-        output_config: { effort: 'low', format: { type: 'json_schema', schema: SPEC_SCHEMA } },
+        output_config: { format: { type: 'json_schema', schema: SPEC_SCHEMA } },
         messages: [
           {
             role: 'user',

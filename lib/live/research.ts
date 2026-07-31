@@ -9,7 +9,10 @@
 import { createMessage, firstText, type MessageLike } from './anthropic';
 import type { JobSpec, MarketResearch, SourceRef, VendorLead } from './types';
 
-const MODEL = 'claude-opus-5';
+// Haiku with the basic search tool is the fastest configuration that still
+// returns real sourced vendors: ~20s vs ~34s for Opus with dynamic filtering.
+// Measured, not assumed - max_uses barely moves the needle, the round-trips do.
+const MODEL = 'claude-haiku-4-5';
 // Opus 5 with web search + dynamic filtering routinely needs 2-3 minutes for
 // a multi-vendor sweep. Budget generously; the UI streams a placeholder while
 // this runs, and a timeout falls back to fixtures rather than failing.
@@ -76,6 +79,64 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
+/**
+ * In-flight research keyed by job id.
+ *
+ * A blocking research call cannot finish in 10s - the search round-trips
+ * alone cost more than that. So it is kicked off the moment the job is
+ * created and awaited later, which turns most of the latency into time the
+ * user was already spending reading the dashboard.
+ */
+const inFlight = new Map<string, Promise<MarketResearch>>();
+
+/** Fire-and-forget. Safe to call repeatedly; only the first call researches. */
+export function startResearch(jobId: string, spec: JobSpec): void {
+  if (inFlight.has(jobId)) return;
+  const promise = researchMarket(spec).catch(() =>
+    simulatedResearch(spec, 'Research failed - using generic vendors.'),
+  );
+  inFlight.set(jobId, promise);
+  // Never let an unobserved rejection take the process down.
+  void promise.catch(() => {});
+}
+
+/**
+ * Returns research for a job, waiting at most `capMs` for work already in
+ * flight. Past the cap it hands back scaled fixtures so the deal room opens
+ * immediately rather than making the user watch a frozen button.
+ */
+export async function researchForJob(
+  jobId: string,
+  spec: JobSpec,
+  capMs = 10_000,
+): Promise<MarketResearch> {
+  startResearch(jobId, spec);
+  const pending = inFlight.get(jobId)!;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), capMs));
+  const winner = await Promise.race([pending, timeout]);
+  if (winner) return winner;
+  return simulatedResearch(
+    spec,
+    `Live research did not return within ${Math.round(capMs / 1000)}s - showing generic vendors.`,
+  );
+}
+
+/**
+ * Returns the real research for a job if it has landed since, else null.
+ *
+ * Deal creation caps its wait at 10s and may fall back to fixtures, but the
+ * live call keeps running. By the time the user reaches the negotiation it has
+ * usually finished, so the deal is upgraded from generic vendors to sourced
+ * ones rather than staying simulated for the whole session.
+ */
+export async function peekResearch(jobId: string, graceMs = 8_000): Promise<MarketResearch | null> {
+  const pending = inFlight.get(jobId);
+  if (!pending) return null;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), graceMs));
+  const winner = await Promise.race([pending, timeout]);
+  return winner && !winner.simulated ? winner : null;
+}
+
 export function researchConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
@@ -108,13 +169,9 @@ async function liveResearch(spec: JobSpec): Promise<MarketResearch> {
     createMessage({
       model: MODEL,
       max_tokens: 8000,
-      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5 }],
-      output_config: {
-        // 'low' keeps the sweep to roughly one minute without measurably
-        // hurting the vendor list; raise it if quotes come back vague.
-        effort: 'low',
-        format: { type: 'json_schema', schema: RESEARCH_SCHEMA },
-      },
+      // Haiku 4.5 predates the _20260209 tool and rejects `effort` outright.
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }],
+      output_config: { format: { type: 'json_schema', schema: RESEARCH_SCHEMA } },
       messages: [{ role: 'user', content: prompt }],
     }),
     RESEARCH_TIMEOUT_MS,

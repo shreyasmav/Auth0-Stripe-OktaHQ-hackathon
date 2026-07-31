@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import type { Deal, Org } from '@/lib/types';
 import { BUYER_MANDATE } from '@/lib/seed';
 import { heuristicSpec } from '@/lib/live/jobspec';
-import { researchMarket } from '@/lib/live/research';
+import { researchForJob } from '@/lib/live/research';
 import { logEvent, snapshot, store } from '@/lib/store';
 
 /**
@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
   if (!job) return Response.json({ error: 'job_not_found' }, { status: 404 });
 
   const spec = job.spec ?? heuristicSpec(job.rawText);
-  const research = await researchMarket(spec);
+  // Never block the deal room for more than 10s (see researchForJob).
+  const research = await researchForJob(job.id, spec, 10_000);
 
   logEvent(
     'agent',

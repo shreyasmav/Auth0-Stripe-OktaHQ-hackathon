@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import type { Job } from '@/lib/types';
 import { getSessionUser } from '@/lib/auth0/session';
 import { parseJobSpec } from '@/lib/live/jobspec';
+import { startResearch } from '@/lib/live/research';
 import { logEvent, snapshot, store } from '@/lib/store';
 
 // POST /api/jobs {rawText} -> {job}
@@ -30,6 +31,10 @@ export async function POST(req: NextRequest) {
   };
 
   store.jobs.set(job.id, job);
+
+  // Head start: research runs while the user is still looking at the
+  // dashboard, so opening the deal room rarely waits the full round trip.
+  startResearch(job.id, spec);
   logEvent('system', `Job parsed: ${job.title} (${job.category}) in ${spec.location}, needed by ${spec.deadline}.`);
   snapshot();
   return Response.json({ job });

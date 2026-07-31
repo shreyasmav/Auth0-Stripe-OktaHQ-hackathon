@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { SETTLE_AMOUNT_CENTS } from '@/lib/agents/fallback';
 import { runNegotiation } from '@/lib/agents/negotiate';
 import { runDeterministicNegotiation, runLiveNegotiation } from '@/lib/live/negotiate';
-import { researchConfigured } from '@/lib/live/research';
+import { peekResearch, researchConfigured } from '@/lib/live/research';
 import { logEvent, snapshot, store } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +32,24 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const { id } = await ctx.params;
   const deal = store.deals.get(id);
   if (!deal) return Response.json({ error: 'deal_not_found' }, { status: 404 });
+
+  // Deal creation caps its research wait at 10s. If it fell back to fixtures
+  // but the live call has since landed, upgrade the deal before negotiating.
+  if (deal.research?.simulated && deal.transcript.length === 0) {
+    const late = await peekResearch(deal.jobId);
+    if (late) {
+      deal.research = late;
+      const cheapest = [...late.vendors].sort((a, b) => a.floorCents - b.floorCents)[0];
+      const org = store.orgs.get(deal.vendorOrgId);
+      if (org && cheapest) {
+        org.name = cheapest.name;
+        org.floorCents = cheapest.floorCents;
+        store.orgs.set(org.id, org);
+      }
+      logEvent('agent', `Live research landed after the deal opened; upgraded to sourced vendors.`);
+      snapshot();
+    }
+  }
 
   const forceScripted = new URL(req.url).searchParams.get('scripted') === '1';
   const useLive =
