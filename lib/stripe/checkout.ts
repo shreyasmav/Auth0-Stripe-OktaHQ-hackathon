@@ -10,6 +10,7 @@
 // split shown in the UI is the same money movement either way.
 import type Stripe from 'stripe';
 import { getStripe } from './client';
+import { defaultConnectedAccount } from '../env';
 import type { Deal, Org } from '../types';
 
 const PLATFORM_FEE_RATE = 0.03;
@@ -36,11 +37,16 @@ export async function createDealCheckoutSession(
   // Only route funds to a vendor that finished Connect onboarding. Without an
   // account id this is a plain charge and the split is display-only - the same
   // honest distinction the pay route draws.
+  // Prefer the vendor's own onboarded account; fall back to the configured
+  // STRIPE_ACCOUNT_ID so a demo can route real money without every vendor
+  // completing Connect onboarding first.
+  const destination = vendor.stripeAccountId ?? defaultConnectedAccount();
+
   const paymentIntentData: Stripe.Checkout.SessionCreateParams.PaymentIntentData =
-    vendor.stripeAccountId
+    destination
       ? {
           application_fee_amount: feeCents,
-          transfer_data: { destination: vendor.stripeAccountId },
+          transfer_data: { destination },
           metadata: { deal_id: deal.id, approval_id: deal.approvalId ?? '' },
         }
       : { metadata: { deal_id: deal.id, approval_id: deal.approvalId ?? '' } };

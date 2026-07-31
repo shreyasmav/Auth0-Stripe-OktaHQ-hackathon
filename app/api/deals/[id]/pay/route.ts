@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import type { Approval } from '@/lib/types';
 import { verifyBearer } from '@/lib/auth0/verify';
-import { flags, stripeConfigured } from '@/lib/env';
+import { defaultConnectedAccount, flags, stripeConfigured } from '@/lib/env';
 import { getStripe } from '@/lib/stripe/client';
 import { logEvent, snapshot, store } from '@/lib/store';
 
@@ -106,7 +106,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const stripe = getStripe();
     if (!stripe) return Response.json({ error: 'stripe_unavailable' }, { status: 502 });
     try {
-      if (vendor?.stripeAccountId) {
+      const destination = vendor?.stripeAccountId ?? defaultConnectedAccount();
+      if (destination) {
         // §13 destination charge, server-confirmed for demo determinism. The
         // idempotency key is keyed on the deal so a double-click cannot
         // double-charge.
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
             confirm: true,
             automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
             application_fee_amount: feeCents,
-            transfer_data: { destination: vendor.stripeAccountId },
+            transfer_data: { destination },
             metadata: { deal_id: deal.id, approval_id: deal.approvalId ?? '' },
           },
           { idempotencyKey: `deal_${deal.id}_pay` },
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         paymentIntentId = pi.id;
         logEvent(
           'stripe',
-          `Destination charge ${pi.id}: ${usd(requested)} to ${vendor.name}, ${usd(feeCents)} platform fee.`,
+          `Destination charge ${pi.id}: ${usd(requested)} to ${vendor?.name ?? destination}, ${usd(feeCents)} platform fee.`,
         );
       } else {
         // Demo shortcut: vendor has not finished Connect onboarding, so this
