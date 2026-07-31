@@ -40,14 +40,14 @@ export default async function ApprovePage({
   const approval = await getApproval(approvalId);
   if (!approval) {
     return (
-      <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center px-6">
-        <div className="text-center">
-          <p className="text-2xl font-bold">Approval not found</p>
-          <p className="mt-2 text-neutral-400">
+      <div className="flex min-h-[70vh] items-center justify-center px-6 text-center">
+        <div>
+          <p className="text-[28px] font-semibold">Approval not found</p>
+          <p className="mt-2 text-[17px] text-muted">
             This link may be stale. Ask the requester to send a fresh one.
           </p>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -59,64 +59,61 @@ export default async function ApprovePage({
   const vendorName =
     detail?.vendor ?? store.orgs.get(deal?.vendorOrgId ?? '')?.name ?? 'Vendor';
   const amountCents = detail?.amount ?? deal?.amountCents ?? 0;
-  const usd = `$${(amountCents / 100).toFixed(2)}`;
+  const usd =
+    '$' +
+    (amountCents / 100).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   const showMockChip = !auth0Configured() || flags.demoMode === 'mock';
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center px-6 py-10">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium uppercase tracking-widest text-neutral-500">
-            Payment approval
-          </p>
-          {showMockChip && (
-            <span className="rounded-full bg-amber-500/20 border border-amber-500/50 px-3 py-1 text-xs font-bold text-amber-400">
-              MOCK
-            </span>
-          )}
-        </div>
-
-        <h1 className="mt-6 text-6xl font-bold tracking-tight">{usd}</h1>
-        <p className="mt-2 text-2xl text-neutral-300">
-          to <span className="font-semibold text-white">{vendorName}</span>
-        </p>
-
-        <div className="mt-8 space-y-4 rounded-2xl bg-neutral-900 border border-neutral-800 p-5">
-          {detail?.scope_of_work && (
-            <div>
-              <p className="text-xs uppercase tracking-widest text-neutral-500">Scope of work</p>
-              <p className="mt-1 text-lg text-neutral-200">{detail.scope_of_work}</p>
-            </div>
-          )}
-          {detail?.deadline && (
-            <div>
-              <p className="text-xs uppercase tracking-widest text-neutral-500">Deadline</p>
-              <p className="mt-1 text-lg text-neutral-200">{detail.deadline}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs uppercase tracking-widest text-neutral-500">Deal</p>
-            <p className="mt-1 font-mono text-sm text-neutral-400">{approval.dealId}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-widest text-neutral-500">Requested by agent</p>
-            <p className="mt-1 text-lg text-neutral-200">
-              This amount exceeds the agent&apos;s mandate. Your authorization is required
-              before any payment can move.
-            </p>
-          </div>
-        </div>
-
-        <ApprovalActions approvalId={approval.id} initialStatus={approval.status} />
-
-        {/* For the judge who asks to see the raw RAR payload. */}
-        <details className="mt-8 text-neutral-500">
-          <summary className="cursor-pointer text-sm">Raw authorization details</summary>
-          <pre className="mt-2 overflow-x-auto rounded-xl bg-neutral-900 p-4 text-xs text-neutral-400">
-            {JSON.stringify(approval.authorizationDetails, null, 2)}
-          </pre>
-        </details>
+    <div className="mx-auto w-full max-w-md px-6 py-12">
+      <div className="flex items-center justify-between gap-3">
+        <p className="eyebrow">Payment approval</p>
+        {showMockChip && <span className="chip">MOCK</span>}
       </div>
-    </main>
+
+      <h1 className="price mt-6 text-[64px] leading-none font-semibold">{usd}</h1>
+      <p className="mt-3 text-[21px] text-muted">
+        to <span className="font-medium text-ink">{vendorName}</span>
+      </p>
+
+      <div className="card mt-8 divide-y divide-rule">
+        {detail?.scope_of_work && (
+          <div className="px-6 py-4">
+            <p className="eyebrow">Scope of work</p>
+            <p className="mt-1.5 text-[17px] leading-[1.4]">{detail.scope_of_work}</p>
+          </div>
+        )}
+        {detail?.deadline && (
+          <div className="px-6 py-4">
+            <p className="eyebrow">Deadline</p>
+            <p className="mt-1.5 text-[17px]">{detail.deadline}</p>
+          </div>
+        )}
+        <div className="px-6 py-4">
+          <p className="eyebrow">Deal</p>
+          <p className="mt-1.5 font-mono text-[13px] text-muted">{approval.dealId}</p>
+        </div>
+        <div className="px-6 py-4">
+          <p className="eyebrow">Why you are being asked</p>
+          <p className="mt-1.5 text-[15px] leading-[1.5] text-muted">
+            This amount exceeds the agent&apos;s mandate. Your authorization is required before any
+            payment can move.
+          </p>
+        </div>
+      </div>
+
+      <ApprovalActions approvalId={approval.id} initialStatus={approval.status} />
+
+      {/* For the judge who asks to see the raw RAR payload. */}
+      <details className="mt-8 text-muted">
+        <summary className="cursor-pointer text-[14px]">Raw authorization details</summary>
+        <pre className="well mt-2 overflow-x-auto p-4 font-mono text-[11px] leading-relaxed">
+          {JSON.stringify(approval.authorizationDetails, null, 2)}
+        </pre>
+      </details>
+    </div>
   );
 }

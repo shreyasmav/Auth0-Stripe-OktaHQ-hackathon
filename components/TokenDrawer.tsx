@@ -38,24 +38,20 @@ export default function TokenDrawer({ deal, approval }: { deal: Deal; approval: 
   const scopes = elevated ? [...BASE_SCOPES, 'payments:execute'] : BASE_SCOPES;
 
   return (
-    <details className="rounded-xl border border-line bg-raised">
-      <summary className="cursor-pointer select-none px-5 py-4 font-mono text-[11px] uppercase tracking-[0.25em] text-dim transition-colors hover:text-ink">
+    <details className="card overflow-hidden">
+      <summary className="cursor-pointer list-none px-6 py-4 text-[15px] font-medium transition-colors select-none hover:text-blue">
         Agent token
       </summary>
-      <div className="space-y-4 border-t border-line px-5 py-4">
-        <p className="text-xs text-dim">decoded from the agent access token</p>
+      <div className="space-y-5 border-t border-rule px-6 py-5">
+        <p className="text-[13px] text-muted">Decoded from the agent access token.</p>
 
         <div>
-          <div className="font-mono text-[11px] uppercase tracking-widest text-dim">scope</div>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
+          <div className="eyebrow">Scope</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {scopes.map((s) => (
               <span
                 key={s}
-                className={`rounded px-2 py-0.5 font-mono text-xs ${
-                  s === 'payments:execute'
-                    ? 'bg-money/15 font-bold text-money'
-                    : 'bg-inset text-dim'
-                }`}
+                className={`chip font-mono ${s === 'payments:execute' ? 'chip-ok' : ''}`}
               >
                 {s}
               </span>
@@ -64,35 +60,31 @@ export default function TokenDrawer({ deal, approval }: { deal: Deal; approval: 
         </div>
 
         <div>
-          <div className="font-mono text-[11px] uppercase tracking-widest text-dim">org_id</div>
-          <div className="mt-1 font-mono text-sm">{deal.buyerOrgId}</div>
+          <div className="eyebrow">org_id</div>
+          <div className="mt-1.5 font-mono text-[13px]">{deal.buyerOrgId}</div>
         </div>
 
         <div>
-          <div className="font-mono text-[11px] uppercase tracking-widest text-dim">
-            https://mandate.dev/mandate
-          </div>
-          <pre className="mt-1.5 overflow-x-auto rounded-lg bg-inset p-3 font-mono text-[11px] leading-relaxed text-dim">
+          <div className="eyebrow">https://mandate.dev/mandate</div>
+          <pre className="well mt-2 overflow-x-auto p-3 font-mono text-[11px] leading-relaxed text-muted">
             {JSON.stringify(deal.mandateSnapshot, null, 2)}
           </pre>
         </div>
 
         {elevated && approval && (
           <div>
-            <div className="font-mono text-[11px] uppercase tracking-widest text-money">
-              authorization_details
-            </div>
-            <pre className="mt-1.5 overflow-x-auto rounded-lg bg-inset p-3 font-mono text-[11px] leading-relaxed text-dim">
+            <div className="eyebrow text-green">authorization_details</div>
+            <pre className="well mt-2 overflow-x-auto p-3 font-mono text-[11px] leading-relaxed text-muted">
               {JSON.stringify(approval.authorizationDetails, null, 2)}
             </pre>
           </div>
         )}
 
         {flags && (
-          <div className="border-t border-line pt-3 font-mono text-[11px] text-dim">
-            signature: {flags.auth0Configured ? 'Auth0 tenant JWKS' : 'mock, no tenant configured'}
+          <div className="border-t border-rule pt-4 text-[12px] text-muted">
+            Signature: {flags.auth0Configured ? 'Auth0 tenant JWKS' : 'mock, no tenant configured'}
             <br />
-            approval mode: {flags.approvalMode} &middot; negotiation: {flags.negotiationMode}
+            Approval mode: {flags.approvalMode} &middot; negotiation: {flags.negotiationMode}
           </div>
         )}
       </div>

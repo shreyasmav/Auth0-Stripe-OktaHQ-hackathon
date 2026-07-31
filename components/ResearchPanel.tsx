@@ -1,61 +1,56 @@
 import type { MarketResearch } from '@/lib/live/types';
 
-const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const usd = (c: number) =>
+  '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * Shows where the negotiation's numbers came from. When the research is
- * simulated this says so in plain language - a judge should never be able to
- * mistake a fixture for a sourced quote.
+ * Shows where the negotiation's numbers came from, laid out like a product
+ * comparison row: name, price range, one line of reasoning. When the research
+ * is simulated this says so in plain language - a judge should never be able
+ * to mistake a fixture for a sourced quote.
  */
 export default function ResearchPanel({ research }: { research: MarketResearch }) {
   return (
-    <section className="rounded-xl border border-line bg-raised p-5">
-      <div className="mb-3 flex items-center gap-2">
-        <h2 className="eyebrow">Sourcing</h2>
+    <section className="card p-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[17px] font-semibold">Sourcing</h2>
         {research.simulated ? (
-          <span className="rounded bg-warn/15 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-warn">
-            Simulated
-          </span>
+          <span className="chip chip-warn">Simulated</span>
         ) : (
-          <span className="rounded bg-money/15 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-money">
-            Live research
-          </span>
+          <span className="chip chip-ok dot-ok">Live research</span>
         )}
       </div>
 
-      <div className="mb-3">
-        <span className="fig-label">FIG. 01 &middot; MARKET SURVEY &middot; N.T.S.</span>
-      </div>
-      {research.note && <p className="mb-3 text-sm text-dim">{research.note}</p>}
+      {research.note && <p className="mt-3 text-[14px] text-muted">{research.note}</p>}
 
-      <p className="mb-4 text-sm text-ink">
-        Market range for{' '}
-        <span className="text-dim">
-          {research.spec.title} in {research.spec.location}
+      <p className="mt-3 text-[15px] leading-[1.45]">
+        <span className="text-muted">
+          Market range for {research.spec.title} in {research.spec.location}:{' '}
         </span>
-        : <span className="font-mono">{usd(research.marketLowCents)}</span> to{' '}
-        <span className="font-mono">{usd(research.marketHighCents)}</span>
+        <span className="price font-medium">
+          {usd(research.marketLowCents)} – {usd(research.marketHighCents)}
+        </span>
       </p>
 
-      <ul className="mb-4 space-y-3">
+      <ul className="mt-5 divide-y divide-rule border-t border-rule">
         {research.vendors.map((v) => (
-          <li key={v.name} className="rounded-lg border border-line bg-inset p-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="font-semibold text-ink">{v.name}</span>
-              <span className="font-mono text-sm text-dim">
-                {usd(v.quoteLowCents)} - {usd(v.quoteHighCents)}
+          <li key={v.name} className="py-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="text-[17px] font-medium">{v.name}</span>
+              <span className="price text-[15px] whitespace-nowrap">
+                {usd(v.quoteLowCents)} – {usd(v.quoteHighCents)}
               </span>
             </div>
-            <p className="mt-1 text-sm text-dim">{v.rationale}</p>
+            <p className="mt-1 text-[14px] leading-[1.45] text-muted">{v.rationale}</p>
             {v.sources.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                 {v.sources.map((s) => (
                   <a
                     key={s.url}
                     href={s.url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-xs text-accent underline underline-offset-2"
+                    className="text-[13px] text-blue hover:underline"
                   >
                     {s.title}
                   </a>
@@ -67,7 +62,7 @@ export default function ResearchPanel({ research }: { research: MarketResearch }
       </ul>
 
       {research.sources.length > 0 && (
-        <details className="text-sm text-dim">
+        <details className="mt-4 text-[14px] text-muted">
           <summary className="cursor-pointer">
             {research.sources.length} page{research.sources.length === 1 ? '' : 's'} searched
           </summary>
@@ -78,7 +73,7 @@ export default function ResearchPanel({ research }: { research: MarketResearch }
                   href={s.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="text-accent underline underline-offset-2"
+                  className="text-[13px] text-blue hover:underline"
                 >
                   {s.title}
                 </a>

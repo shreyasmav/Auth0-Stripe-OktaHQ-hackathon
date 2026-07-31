@@ -12,54 +12,78 @@ type Flags = {
   stripeConfigured: boolean;
 };
 
+type Me = {
+  authConfigured: boolean;
+  signedIn: boolean;
+  mocked: boolean;
+  user: { name: string; email: string; orgId: string; role: string } | null;
+};
+
 /**
- * Top navigation. Client component so the MOCK chip and auth links
- * reflect runtime flags from GET /api/flags, not build-time env.
+ * Global nav, modelled on Apple's: 44px tall, translucent with a heavy blur,
+ * hairline rule, 12px links in the single grey. Deliberately quiet - it is
+ * chrome, not a feature.
  */
 export default function TopNav() {
   const [flags, setFlags] = useState<Flags | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
     let alive = true;
     fetch('/api/flags')
       .then((r) => (r.ok ? r.json() : null))
-      .then((f) => {
-        if (alive && f) setFlags(f as Flags);
-      })
-      .catch(() => {
-        // Nav stays useful even if flags are unreachable.
-      });
+      .then((f) => alive && f && setFlags(f as Flags))
+      .catch(() => {});
+    fetch('/api/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => alive && m && setMe(m as Me))
+      .catch(() => {});
     return () => {
       alive = false;
     };
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur">
-      <nav className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-6">
-        <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-accent" aria-hidden />
-          AgentMarketplace
+    <header className="sticky top-0 z-30 border-b border-rule/70 bg-bg/80 backdrop-blur-xl backdrop-saturate-150">
+      <nav className="mx-auto flex h-11 max-w-[1024px] items-center gap-8 px-6 text-[12px]">
+        <Link href="/" className="font-semibold tracking-tight text-ink">
+          Mandate
         </Link>
-        <div className="flex items-center gap-4 text-sm text-dim">
+
+        <div className="flex items-center gap-7 text-muted">
           <Link href="/dashboard" className="transition-colors hover:text-ink">
-            Dashboard
+            Buy
           </Link>
           <Link href="/vendor" className="transition-colors hover:text-ink">
-            Vendor
+            Vendors
           </Link>
         </div>
-        <div className="ml-auto flex items-center gap-3">
+
+        <div className="ml-auto flex items-center gap-4">
           {flags?.demoMode === 'mock' && <MockChip />}
-          {flags?.auth0Configured && (
-            <span className="flex items-center gap-3 text-sm text-dim">
-              {/* Plain anchors: these hit the Auth0 route handler, not a page. */}
-              <a href="/auth/login" className="transition-colors hover:text-ink">
-                Sign in
-              </a>
+
+          {me?.signedIn && me.user && (
+            <span className="flex items-center gap-4 text-muted">
+              <span className="hidden sm:inline text-ink">{me.user.name}</span>
+              {/* Plain anchor: /auth/* is mounted by middleware, not the router. */}
               <a href="/auth/logout" className="transition-colors hover:text-ink">
                 Sign out
               </a>
+            </span>
+          )}
+
+          {me?.authConfigured && !me.signedIn && (
+            <a href="/auth/login?returnTo=%2Fdashboard" className="text-blue hover:underline">
+              Sign in
+            </a>
+          )}
+
+          {me && !me.authConfigured && (
+            <span
+              className="text-muted"
+              title="Set AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_SECRET and APP_BASE_URL for real login"
+            >
+              No login configured
             </span>
           )}
         </div>

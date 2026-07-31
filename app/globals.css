@@ -1,89 +1,253 @@
 @import "tailwindcss";
 
 /*
-  Design system for the Mandate demo UI.
-  Near-black stage, off-white type, one violet accent.
-  Green is money. Red is a mandate breach. Amber is mock/warning.
-  Built for a projector: big type, high contrast, no subtlety.
+  Design system modelled on apple.com/shop/buy-mac.
+
+  The defining moves, in order of how much they matter:
+    1. Light. White page, #f5f5f7 for alternating bands. No dark chrome.
+    2. No decorative colour. Blue is for actions only. Meaning is carried by
+       weight, size and whitespace, not by hue.
+    3. Type does the work. Big tight-tracked headlines, generous line height
+       on body, a single grey for everything secondary.
+    4. Pill buttons, 980px radius. Cards at 18px.
+    5. Air. Sections breathe at 80-120px vertical.
 */
 :root {
-  /* Palette lifted from adambiotech.com: near-black ground (#0a0a0a) with a
-     dark desaturated forest green (#243328 family) as the only brand accent.
-     Technical and editorial rather than SaaS-bright. */
-  --bg: #0a0a0a;
-  --raised: #121412;
-  --inset: #0e100e;
-  --line: #232a24;
-  --ink: #eceae4;
-  --dim: #8f958d;
-  --accent: #6f8f74;
-  --accent-deep: #243328;
-  --money: #7ba982;
-  --danger: #c4614f;
-  --warn: #c9a227;
+  --bg: #ffffff;
+  --band: #f5f5f7; /* alternating section background */
+  --card: #ffffff;
+  --ink: #1d1d1f; /* Apple's near-black, never pure #000 */
+  --muted: #6e6e73; /* the single secondary grey */
+  --rule: #d2d2d7;
+  --blue: #0071e3; /* actions only */
+  --blue-hover: #0077ed;
+  --green: #008009; /* in stock / within mandate */
+  --red: #bf4800; /* Apple's warning orange-red, not a pure red */
+  --amber: #9a6b00;
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-raised: var(--raised);
-  --color-inset: var(--inset);
-  --color-line: var(--line);
+  --color-band: var(--band);
+  --color-card: var(--card);
   --color-ink: var(--ink);
-  --color-dim: var(--dim);
-  --color-accent: var(--accent);
-  --color-accent-deep: var(--accent-deep);
-  --color-money: var(--money);
-  --color-danger: var(--danger);
-  --color-warn: var(--warn);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  /* JetBrains-adjacent mono stack for numbers. No font downloads. */
-  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-blue: var(--blue);
+  --color-blue-hover: var(--blue-hover);
+  --color-green: var(--green);
+  --color-red: var(--red);
+  --color-amber: var(--amber);
+
+  /* Aliases so components written against the old dark tokens keep compiling
+     while they are migrated. Everything resolves to the light palette. */
+  --color-raised: var(--card);
+  --color-inset: var(--band);
+  --color-line: var(--rule);
+  --color-dim: var(--muted);
+  --color-accent: var(--blue);
+  --color-accent-deep: var(--blue-hover);
+  --color-money: var(--green);
+  --color-danger: var(--red);
+  --color-warn: var(--amber);
+
+  /* On a Mac this resolves to SF Pro, which is the actual Apple face. The
+     fallbacks matter more than the first entry for everyone else. */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 html {
-  /* Native dark form controls and scrollbars. No light mode exists. */
-  color-scheme: dark;
+  color-scheme: light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background:
-    radial-gradient(70% 45% at 50% 0%, rgba(36, 51, 40, 0.55), transparent 65%),
-    var(--bg);
+  background: var(--bg);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
   min-height: 100vh;
 }
 
-/* Keyboard focus reads in the accent, everywhere, without per-element classes. */
+/* Apple sets headlines tight and body loose. Doing this globally is what
+   stops every heading needing a tracking- utility. */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.025em;
+  font-weight: 600;
+}
+
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 ::selection {
-  background: var(--accent-deep);
+  background: #b3d7ff;
   color: var(--ink);
 }
 
-/* Quiet scrollbars for the transcript and event feed. */
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  background: var(--line);
-  border-radius: 4px;
+/* --- components ---------------------------------------------------------- */
+
+/* Standard page gutter. Apple keeps content off the edges at every width and
+   never lets a text column run wider than about 1000px. */
+.page {
+  margin-inline: auto;
+  max-width: 1120px;
+  padding-inline: 24px;
+  padding-block: 48px;
 }
 
-/* Each transcript turn fades in once. */
-@keyframes turn-in {
+/* The pill. 980px is Apple's actual radius value, not an approximation. */
+.btn-pill {
+  border-radius: 980px;
+  padding: 12px 22px;
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 400;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+/* Compact pill for panel-level actions, where 17px would dominate. */
+.btn-pill-sm {
+  border-radius: 980px;
+  padding: 8px 17px;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 400;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+/* Destructive outline. Apple almost never colours a button red, so this
+   stays an outline and carries the warning in the text instead. */
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(191, 72, 0, 0.06);
+}
+.btn-danger:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+/* Small rounded label. Grey by default; modifiers tint the text only. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 980px;
+  border: 1px solid var(--rule);
+  padding: 3px 11px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip-ok {
+  border-color: rgba(0, 128, 9, 0.4);
+  color: var(--green);
+}
+.chip-warn {
+  border-color: rgba(154, 107, 0, 0.45);
+  color: var(--amber);
+}
+.chip-alert {
+  border-color: rgba(191, 72, 0, 0.5);
+  color: var(--red);
+}
+
+/* Inset well for raw payloads and disabled fields. */
+.well {
+  background: var(--band);
+  border-radius: 12px;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--blue-hover);
+}
+.btn-primary:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(0, 113, 227, 0.06);
+}
+
+/* Text link that grows an arrow, Apple's most-used secondary action. */
+.link-arrow {
+  color: var(--blue);
+  font-size: 17px;
+}
+.link-arrow:hover {
+  text-decoration: underline;
+}
+
+/* Product card: white, 18px, hairline, lifts slightly on hover. */
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  border: 1px solid var(--rule);
+}
+
+.card-hover {
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Small all-caps eyebrow above a section heading. */
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Apple sets prices in a slightly tighter, tabular face. */
+.price {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Availability dot, as on the buy pages. */
+.dot-ok::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 7px;
+  vertical-align: middle;
+}
+
+/* --- motion -------------------------------------------------------------- */
+
+@keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -91,67 +255,47 @@ body {
   }
 }
 .turn-in {
-  animation: turn-in 380ms ease-out both;
+  animation: rise 420ms cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
-/* The mandate breach beat: one shake plus one red shockwave. Runs once. */
-@keyframes breach-shake {
-  0%, 100% { transform: none; }
-  15% { transform: translateX(-7px); }
-  30% { transform: translateX(7px); }
-  45% { transform: translateX(-5px); }
-  60% { transform: translateX(5px); }
-  75% { transform: translateX(-2px); }
-}
-@keyframes breach-glow {
-  0% { box-shadow: 0 0 0 0 rgba(196, 97, 79, 0.6); }
-  100% { box-shadow: 0 0 0 28px rgba(196, 97, 79, 0); }
+/* The mandate breach. Restrained on a light page: a wash and a single nudge,
+   not the shake-and-glow a dark UI can carry. */
+@keyframes breach-wash {
+  0% {
+    background-color: rgba(191, 72, 0, 0.14);
+  }
+  100% {
+    background-color: rgba(191, 72, 0, 0);
+  }
 }
 .breach-once {
-  animation: breach-shake 550ms ease, breach-glow 950ms ease-out;
+  animation: breach-wash 1400ms ease-out;
 }
 
-/* Waiting-for-approver dots. */
 @keyframes dot-blink {
-  0%, 80%, 100% { opacity: 0.25; }
-  40% { opacity: 1; }
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
 }
 .dot {
   animation: dot-blink 1.2s infinite both;
 }
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-
-/* --- Drafting-annotation motif (adambiotech.com) ------------------------- */
-
-/* All-caps monospace eyebrow above a section heading. */
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--dim);
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
 }
 
-/* Technical callout, e.g. "FIG. 02 - NEGOTIATION - REV A". */
-.fig-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--dim);
-  opacity: 0.65;
-}
-
-/* Hairline rule that reads as a drawing border rather than a card edge. */
-.rule-technical {
-  border-color: var(--line);
-  border-style: solid;
-}
-
-/* Big-number-over-caption stat, the site's hero quad pattern. */
-.stat-figure {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+@media (prefers-reduced-motion: reduce) {
+  .turn-in,
+  .breach-once,
+  .dot {
+    animation: none;
+  }
 }

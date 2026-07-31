@@ -20,14 +20,25 @@ const ORG_NAMES: Record<string, string> = {
   org_delta: 'Delta Contracting',
 };
 
+// Sentence-case labels: Apple never sets a status in shouting monospace.
+const STATE_LABEL: Record<DealState, string> = {
+  negotiating: 'Negotiating',
+  settled_within_mandate: 'Within mandate',
+  awaiting_approval: 'Awaiting approval',
+  approved: 'Approved',
+  denied: 'Declined',
+  paid: 'Paid',
+  failed: 'Failed',
+};
+
 const STATE_CHIP: Record<DealState, string> = {
-  negotiating: 'border-accent/50 text-accent',
-  settled_within_mandate: 'border-money/50 text-money',
-  awaiting_approval: 'border-warn/50 text-warn',
-  approved: 'border-money/50 text-money',
-  denied: 'border-danger/50 text-danger',
-  paid: 'border-money/50 text-money',
-  failed: 'border-danger/50 text-danger',
+  negotiating: '',
+  settled_within_mandate: 'chip-ok',
+  awaiting_approval: 'chip-warn',
+  approved: 'chip-ok',
+  denied: 'chip-alert',
+  paid: 'chip-ok',
+  failed: 'chip-alert',
 };
 
 /**
@@ -150,13 +161,22 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
     };
   }, [id]);
 
-  const researchedVendor = research?.vendors?.[0]?.name;
+  // The negotiation settles against the cheapest researched vendor by floor
+  // price (lib/live/negotiate.ts), which is not necessarily the first one the
+  // research returned. Mirror that choice so the header names the vendor the
+  // approval and the payment are actually for.
+  const researchedVendor = research?.vendors?.length
+    ? [...research.vendors].sort((a, b) => a.floorCents - b.floorCents)[0].name
+    : undefined;
   const vendorName = researchedVendor ?? (deal ? (ORG_NAMES[deal.vendorOrgId] ?? deal.vendorOrgId) : 'Vendor');
   const buyerName = deal ? (ORG_NAMES[deal.buyerOrgId] ?? deal.buyerOrgId) : 'Buyer';
   const ceiling = deal?.mandateSnapshot?.maxAmountCents ?? 80000;
 
+  // Once the deal has settled the settled amount is the truth. The last offer
+  // on the table can be a rejected ask from a vendor that was passed over, and
+  // showing it here contradicted the approval card.
   const lastOffer = [...turns].reverse().find((t) => typeof t.offerCents === 'number')?.offerCents;
-  const offerCents = lastOffer ?? deal?.amountCents;
+  const offerCents = deal?.amountCents ?? lastOffer;
   const breached = deal?.amountCents !== undefined && deal.amountCents > ceiling;
 
   // The deal record can lag the approval by a beat since only the approval
@@ -178,53 +198,55 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
       approval !== null);
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Deal room</h1>
-          <span className="text-lg text-dim">
-            {buyerName} <span className="text-dim/50">vs</span> {vendorName}
-          </span>
-          <span className="rounded-md border border-line bg-raised px-2 py-0.5 font-mono text-xs text-dim/70">
-            {id}
-          </span>
+    <div className="page">
+      <div className="mb-6 flex items-end justify-between gap-6">
+        <div>
+          <p className="eyebrow mb-2">
+            {buyerName} &middot; {vendorName}
+          </p>
+          <h1 className="text-[40px] leading-none font-semibold">Deal room</h1>
+          <p className="mt-2 font-mono text-[12px] text-muted">{id}</p>
         </div>
         {displayState && (
-          <span
-            className={`rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-widest ${STATE_CHIP[displayState]}`}
-          >
-            {displayState.replaceAll('_', ' ')}
+          <span className={`chip ${STATE_CHIP[displayState]} shrink-0`}>
+            {STATE_LABEL[displayState]}
           </span>
         )}
       </div>
 
       {warn && (
-        <p className="rounded-lg border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+        <p className="mb-6 rounded-[12px] border border-amber/40 bg-amber/5 px-4 py-3 text-[14px] text-amber">
           {warn}
         </p>
       )}
 
       <div className="grid grid-cols-3 gap-6">
-        {/* Left 2/3: the transcript. */}
-        <div className="col-span-2 h-[calc(100vh-13rem)]">
+        {/* Left 2/3: sourcing above the transcript. The column is a flex box so
+            a long research panel scrolls inside its own cap instead of pushing
+            the transcript, which must stay on screen, below the fold. */}
+        <div className="col-span-2 flex h-[calc(100vh-16rem)] flex-col gap-5">
           {research && (
-            <div className="mb-4">
+            <div className="max-h-[38%] shrink-0 overflow-y-auto">
               <ResearchPanel research={research} />
             </div>
           )}
-          <Transcript
-            turns={turns}
-            negotiating={deal?.state === 'negotiating' || deal === null}
-            emptyHint={
-              research && !research.simulated
-                ? 'Agents negotiating on live market data...'
-                : 'Opening the deal room...'
-            }
-          />
+          {/* min-h-0 so the transcript's own overflow container wins over the
+              flex default of never shrinking below content height. */}
+          <div className="min-h-0 flex-1">
+            <Transcript
+              turns={turns}
+              negotiating={deal?.state === 'negotiating' || deal === null}
+              emptyHint={
+                research && !research.simulated
+                  ? 'Agents negotiating on live market data…'
+                  : 'Opening the deal room…'
+              }
+            />
+          </div>
         </div>
 
         {/* Right 1/3: mandate, approval, payment, token, events. */}
-        <div className="h-[calc(100vh-13rem)] space-y-4 overflow-y-auto pr-1">
+        <div className="h-[calc(100vh-16rem)] space-y-5 overflow-y-auto pr-1">
           <MandateBadge ceilingCents={ceiling} offerCents={offerCents} breached={breached} />
 
           {deal && showApproval && (

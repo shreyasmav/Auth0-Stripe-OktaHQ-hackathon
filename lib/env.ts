@@ -18,8 +18,29 @@ export const flags: {
   },
 };
 
+/**
+ * True only when the FULL set the v4 client needs is present.
+ *
+ * Checking domain and client id alone lets a half-filled .env.local look
+ * configured, then fail inside the Auth0Client constructor and silently fall
+ * back to the mock user - which reads as "login is broken" rather than
+ * "login is not set up". Requiring all four makes the state unambiguous.
+ */
 export function auth0Configured(): boolean {
-  return Boolean(process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID);
+  return Boolean(
+    process.env.AUTH0_DOMAIN &&
+      process.env.AUTH0_CLIENT_ID &&
+      process.env.AUTH0_CLIENT_SECRET &&
+      process.env.AUTH0_SECRET &&
+      process.env.APP_BASE_URL,
+  );
+}
+
+/** Names the env vars still missing, for a precise setup error in the UI. */
+export function auth0MissingVars(): string[] {
+  return (
+    ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'AUTH0_SECRET', 'APP_BASE_URL'] as const
+  ).filter((k) => !process.env[k]);
 }
 
 export function stripeConfigured(): boolean {

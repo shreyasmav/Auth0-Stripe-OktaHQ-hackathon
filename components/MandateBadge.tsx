@@ -5,8 +5,12 @@ const usd = (c: number) =>
 
 /**
  * The badge the whole demo pivots on. Persistently shows the ceiling and
- * the live offer. When the settle crosses the ceiling it turns red and
- * shakes exactly once. Must be readable from the back of a room.
+ * the live offer, and washes red once when the settle crosses the ceiling.
+ *
+ * On a white page the breach cannot be carried by a glowing panel, so it is
+ * carried the way Apple carries a stock warning: the border and the numeral
+ * change colour, and a plain sentence says what happened. Still readable from
+ * the back of a room because the numeral is 48px.
  */
 export default function MandateBadge({
   ceilingCents,
@@ -17,58 +21,40 @@ export default function MandateBadge({
   offerCents?: number;
   breached: boolean;
 }) {
+  const over = offerCents !== undefined && offerCents > ceilingCents;
+
   return (
     <div
-      className={`rounded-xl border p-6 transition-colors duration-300 ${
-        breached ? 'breach-once border-danger bg-danger/15' : 'border-line bg-raised'
+      className={`card p-6 transition-colors duration-300 ${
+        breached ? 'breach-once border-red' : ''
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span
-          className={`font-mono text-[11px] uppercase tracking-[0.25em] ${
-            breached ? 'text-danger' : 'text-dim'
-          }`}
-        >
-          Mandate ceiling
-        </span>
-        {breached && (
-          <span className="rounded-md bg-danger px-2.5 py-1 font-mono text-sm font-bold uppercase tracking-widest text-bg">
-            Exceeded
-          </span>
-        )}
+        <span className="eyebrow">Mandate ceiling</span>
+        {breached && <span className="chip chip-alert font-medium">Exceeded</span>}
       </div>
 
       <div
-        className={`mt-1 font-mono text-6xl font-bold tabular-nums ${
-          breached ? 'text-danger' : 'text-money'
+        className={`price mt-2 text-[48px] leading-none font-semibold ${
+          breached ? 'text-red' : 'text-ink'
         }`}
       >
         {usd(ceilingCents)}
       </div>
 
-      <div
-        className={`mt-4 flex items-baseline justify-between border-t pt-3 ${
-          breached ? 'border-danger/30' : 'border-line/60'
-        }`}
-      >
-        <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-dim">
-          Current offer
-        </span>
+      <div className="mt-5 flex items-baseline justify-between border-t border-rule pt-4">
+        <span className="text-[14px] text-muted">Current offer</span>
         <span
-          className={`font-mono text-3xl font-bold tabular-nums ${
-            breached
-              ? 'text-danger'
-              : offerCents !== undefined && offerCents > ceilingCents
-                ? 'text-warn'
-                : 'text-ink'
+          className={`price text-[28px] font-semibold ${
+            breached ? 'text-red' : over ? 'text-amber' : 'text-ink'
           }`}
         >
-          {offerCents !== undefined ? usd(offerCents) : '--'}
+          {offerCents !== undefined ? usd(offerCents) : '—'}
         </span>
       </div>
 
       {breached && (
-        <p className="mt-3 text-base font-medium leading-snug text-danger">
+        <p className="mt-4 text-[15px] leading-[1.45] text-red">
           {typeof offerCents === 'number' && offerCents > ceilingCents
             ? `${usd(offerCents - ceilingCents)} over the mandate. `
             : 'Settle exceeds the mandate. '}

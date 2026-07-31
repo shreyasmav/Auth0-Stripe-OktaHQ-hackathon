@@ -33,41 +33,38 @@ export default function VendorPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Bright Electric</h1>
-        <p className="mt-1 text-dim">Vendor workspace</p>
+    <div className="page">
+      <div className="text-center">
+        <p className="eyebrow mb-3">Vendor workspace</p>
+        <h1 className="text-[48px] leading-none font-semibold">Bright Electric.</h1>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-4">
-          <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">Deals</h2>
-          <div className="rounded-xl border border-line bg-raised p-6">
-            <p className="text-dim">
-              Deals appear here as buyer agents open deal rooms. Watch the event log below for
-              live negotiation and payment activity.
+      <div className="mt-12 grid grid-cols-3 gap-6">
+        <div className="col-span-2 space-y-6">
+          <div className="card p-8">
+            <h2 className="text-[21px] font-semibold">Deals</h2>
+            <p className="mt-3 text-[15px] leading-[1.5] text-muted">
+              Deals appear here as buyer agents open deal rooms. Watch the activity feed for live
+              negotiation and payment events.
             </p>
           </div>
           <EventFeed />
         </div>
 
-        <div className="space-y-4">
-          <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">Your terms</h2>
-          <div className="rounded-xl border border-line bg-raised p-6">
-            <div className="font-mono text-xs uppercase tracking-widest text-dim">
-              Floor price
-            </div>
+        <div className="space-y-6">
+          <div className="card p-7">
+            <p className="eyebrow">Floor price</p>
             {/* §11.1 seed fixture. Private to this vendor: never shown to the buyer side. */}
-            <div className="mt-1 font-mono text-4xl font-bold">$850.00</div>
-            <p className="mt-2 text-xs leading-relaxed text-dim">
+            <p className="price mt-2 text-[36px] leading-none font-semibold">$850.00</p>
+            <p className="mt-3 text-[14px] leading-[1.5] text-muted">
               Private. Your negotiating agent knows this number. The buyer&apos;s agent is never
               given it, so it cannot be prompt-injected into revealing it.
             </p>
           </div>
 
-          <div className="rounded-xl border border-line bg-raised p-6">
-            <div className="font-mono text-xs uppercase tracking-widest text-dim">Payouts</div>
-            <p className="mt-2 text-sm text-dim">
+          <div className="card p-7">
+            <p className="eyebrow">Payouts</p>
+            <p className="mt-2 text-[14px] leading-[1.5] text-muted">
               Connect a Stripe Express account to receive settled payments minus the platform fee.
             </p>
             {connectUrl ? (
@@ -75,7 +72,7 @@ export default function VendorPage() {
                 href={connectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-block rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg transition-colors hover:bg-accent-deep hover:text-ink"
+                className="btn-pill-sm btn-primary mt-5 inline-block"
               >
                 Continue onboarding
               </a>
@@ -83,12 +80,12 @@ export default function VendorPage() {
               <button
                 onClick={startOnboarding}
                 disabled={connecting}
-                className="mt-4 rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg transition-colors hover:bg-accent-deep hover:text-ink disabled:opacity-50"
+                className="btn-pill-sm btn-primary mt-5"
               >
-                {connecting ? 'Creating account...' : 'Set up payouts'}
+                {connecting ? 'Creating account…' : 'Set up payouts'}
               </button>
             )}
-            {warn && <p className="mt-3 text-sm text-warn">{warn}</p>}
+            {warn && <p className="mt-3 text-[14px] text-amber">{warn}</p>}
           </div>
         </div>
       </div>

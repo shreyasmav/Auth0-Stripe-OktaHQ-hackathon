@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import type { Deal } from '@/lib/types';
 
-const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const usd = (c: number) =>
+  '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
  * The within-mandate pay path.
@@ -74,30 +75,28 @@ export default function AcceptAndPay({
   }
 
   return (
-    <section className="rounded-xl border border-money/40 bg-raised p-5">
-      <h2 className="eyebrow">Accept and pay</h2>
-      <div className="mt-1 mb-3">
-        <span className="fig-label">FIG. 03 &middot; SETTLEMENT &middot; WITHIN MANDATE</span>
+    <section className="card p-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[17px] font-semibold">Settled</h2>
+        <span className="chip chip-ok dot-ok">Within mandate</span>
       </div>
 
-      <p className="mb-1 text-sm text-dim">
-        Agreed with <span className="text-ink">{vendorName}</span>
-      </p>
-      <p className="stat-figure mb-4 text-4xl font-bold text-money">{usd(amount)}</p>
+      <p className="mt-3 text-[14px] text-muted">Agreed with {vendorName}</p>
+      <p className="price mt-1 text-[40px] leading-none font-semibold">{usd(amount)}</p>
 
       <button
         type="button"
         onClick={() => void acceptAndPay()}
         disabled={busy}
-        className="w-full rounded-lg bg-money px-4 py-3 text-base font-bold text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="btn-pill btn-primary mt-6 w-full"
       >
-        {busy ? 'Opening Stripe...' : `Accept ${usd(amount)} and pay on Stripe`}
+        {busy ? 'Opening Stripe…' : `Accept ${usd(amount)} and pay`}
       </button>
-      <p className="mt-2 text-center font-mono text-[11px] uppercase tracking-wider text-dim/50">
-        you will be redirected to stripe to enter card details
+      <p className="mt-2.5 text-center text-[12px] text-muted">
+        You will be redirected to Stripe to enter card details.
       </p>
 
-      {error && <p className="mt-3 text-sm text-warn">{error}</p>}
+      {error && <p className="mt-3 text-[14px] text-amber">{error}</p>}
     </section>
   );
 }

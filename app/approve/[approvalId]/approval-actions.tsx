@@ -66,47 +66,49 @@ export default function ApprovalActions({
 
   if (status === 'approved') {
     return (
-      <div className="mt-8 rounded-2xl bg-green-500/15 border border-green-500/40 px-6 py-8 text-center">
-        <p className="text-3xl font-bold text-green-400">Approved</p>
-        <p className="mt-2 text-neutral-300">Payment is now authorized to proceed.</p>
+      <div className="card mt-8 px-6 py-8 text-center">
+        <p className="text-[28px] font-semibold text-green">Approved</p>
+        <p className="mt-2 text-[15px] text-muted">Payment is now authorized to proceed.</p>
       </div>
     );
   }
   if (status === 'denied') {
     return (
-      <div className="mt-8 rounded-2xl bg-red-500/15 border border-red-500/40 px-6 py-8 text-center">
-        <p className="text-3xl font-bold text-red-400">Denied</p>
-        <p className="mt-2 text-neutral-300">No payment will move for this deal.</p>
+      <div className="card mt-8 border-red px-6 py-8 text-center">
+        <p className="text-[28px] font-semibold text-red">Declined</p>
+        <p className="mt-2 text-[15px] text-muted">No payment will move for this deal.</p>
       </div>
     );
   }
   if (status === 'expired') {
     return (
-      <div className="mt-8 rounded-2xl bg-neutral-800 border border-neutral-700 px-6 py-8 text-center">
-        <p className="text-3xl font-bold text-neutral-400">Expired</p>
-        <p className="mt-2 text-neutral-400">This approval request timed out.</p>
+      <div className="card mt-8 px-6 py-8 text-center">
+        <p className="text-[28px] font-semibold text-muted">Expired</p>
+        <p className="mt-2 text-[15px] text-muted">This approval request timed out.</p>
       </div>
     );
   }
 
+  // Thumb-sized targets: this screen is opened on a phone after scanning the
+  // QR code, so the primary pill is deliberately taller than the desktop one.
   return (
-    <div className="mt-8 flex flex-col gap-4">
+    <div className="mt-8 flex flex-col gap-3">
       <button
         onClick={() => act('approved')}
         disabled={busy}
-        className="h-20 rounded-2xl bg-green-500 text-neutral-950 text-3xl font-bold tracking-tight active:bg-green-400 disabled:opacity-50"
+        className="btn-pill btn-primary h-16 text-[21px]"
       >
         Approve
       </button>
       <button
         onClick={() => act('denied')}
         disabled={busy}
-        className="h-14 rounded-2xl border-2 border-red-500/60 text-red-400 text-xl font-semibold active:bg-red-500/10 disabled:opacity-50"
+        className="btn-pill btn-secondary h-12 text-[17px]"
       >
-        Deny
+        Decline
       </button>
       {error && (
-        <p className="text-center text-sm text-red-400">Something went wrong: {error}</p>
+        <p className="text-center text-[14px] text-red">Something went wrong: {error}</p>
       )}
     </div>
   );

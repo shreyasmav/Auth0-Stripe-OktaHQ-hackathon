@@ -3,8 +3,9 @@ import './globals.css';
 import TopNav from '@/components/TopNav';
 
 export const metadata: Metadata = {
-  title: 'AgentMarketplace',
-  description: 'Agents negotiate. Humans hold the money. Auth0 governs whether an agent may act, Stripe governs where the money goes.',
+  title: 'Mandate',
+  description:
+    'Agents negotiate. Humans hold the money. Auth0 governs whether an agent may act, Stripe governs where the money goes.',
 };
 
 export default function RootLayout({
@@ -14,9 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* No container here on purpose: pages own their own gutter via .page,
+          so a section can go full-bleed for an alternating grey band. */}
       <body className="antialiased">
         <TopNav />
-        <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+        <main>{children}</main>
       </body>
     </html>
   );

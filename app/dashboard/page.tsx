@@ -9,8 +9,10 @@ const usd = (c: number) =>
   '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * Buyer home for Acme Facilities. One seeded job card plus a free-text
- * intake box. Both roads lead to the deal room.
+ * Buyer home for Acme Facilities, laid out the way Apple lays out a buy page:
+ * a short centred heading, then a grid of cards that each carry one thing you
+ * can act on. The intake box sits above the grid because typing a request is
+ * the primary action, not a footnote.
  */
 export default function DashboardPage() {
   const router = useRouter();
@@ -65,103 +67,113 @@ export default function DashboardPage() {
     year: 'numeric',
   });
 
+  const jobs = [...createdJobs, SEED_JOB_CARD];
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Acme Facilities</h1>
-          <p className="mt-1 text-dim">Buyer workspace</p>
+    <>
+      <div className="page pb-10">
+        <div className="text-center">
+          <p className="eyebrow mb-3">Acme Facilities</p>
+          <h1 className="text-[48px] leading-[1.05] font-semibold">Buy something.</h1>
+          <p className="mx-auto mt-4 max-w-xl text-[19px] leading-[1.4] text-muted">
+            Describe the work. Your agent researches the market, negotiates it, and stops at your
+            ceiling.
+          </p>
         </div>
-        <span className="rounded-full border border-line bg-raised px-3 py-1 font-mono text-xs uppercase tracking-widest text-dim">
-          Free tier
-        </span>
-      </div>
 
-      {warn && (
-        <p className="rounded-lg border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">{warn}</p>
-      )}
+        {warn && (
+          <p className="mx-auto mt-8 max-w-2xl rounded-[12px] border border-amber/40 bg-amber/5 px-4 py-3 text-center text-[14px] text-amber">
+            {warn}
+          </p>
+        )}
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Left 2/3: jobs */}
-        <div className="col-span-2 space-y-4">
-          <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">Open requests</h2>
-
-          {[...createdJobs, SEED_JOB_CARD].map((job) => (
-            <div
-              key={job.id}
-              className="rounded-xl border border-line bg-raised p-6 transition-colors hover:border-accent/40"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-medium">{job.title}</h3>
-                  <p className="mt-1 text-sm text-dim">{job.scope}</p>
-                  <div className="mt-3 flex gap-3 font-mono text-xs text-dim">
-                    <span className="rounded bg-inset px-2 py-1">{job.category}</span>
-                    <span className="rounded bg-inset px-2 py-1">due {job.deadline}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => openDealRoom(job.id)}
-                  disabled={opening !== null}
-                  className="shrink-0 rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg transition-colors hover:bg-accent-deep hover:text-ink disabled:opacity-50"
-                >
-                  {opening === job.id ? 'Researching vendors...' : 'Open deal room'}
-                </button>
-              </div>
-            </div>
-          ))}
-
-          <div className="rounded-xl border border-line bg-raised p-6">
-            <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">New request</h3>
-            <textarea
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              placeholder="Describe the work in plain language, e.g. We need a 200A electrical panel upgrade in suite 300 before the November inspection."
-              rows={3}
-              className="mt-3 w-full resize-none rounded-lg border border-line bg-inset p-3 text-sm placeholder:text-dim/60 focus:border-accent focus:outline-none"
-            />
+        {/* Intake. The single most-used control on the page, so it gets the
+            width and the primary pill. */}
+        <div className="mx-auto mt-10 max-w-2xl">
+          <textarea
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            placeholder="We need a 200A electrical panel upgrade in suite 300 before the November inspection. Budget under $3,000."
+            rows={3}
+            className="w-full resize-none rounded-[18px] border border-rule bg-white p-5 text-[17px] leading-[1.45] placeholder:text-muted focus:border-blue focus:outline-none"
+          />
+          <div className="mt-4 flex items-center justify-center gap-4">
             <button
               onClick={createJob}
               disabled={creating || !rawText.trim()}
-              className="mt-3 rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-bg disabled:opacity-50"
+              className="btn-pill btn-primary"
             >
-              {creating ? 'Creating...' : 'Create request'}
+              {creating ? 'Creating…' : 'Create request'}
             </button>
+            <span className="text-[13px] text-muted">
+              Name a budget and it becomes the mandate ceiling.
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Right 1/3: mandate summary */}
-        <div className="space-y-4">
-          <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">Agent mandate</h2>
-          <div className="rounded-xl border border-line bg-raised p-6">
-            <div className="font-mono text-xs uppercase tracking-widest text-dim">Ceiling</div>
-            <div className="mt-1 font-mono text-4xl font-bold text-money">
+      {/* Grey band carrying the request cards, the alternating-section move. */}
+      <section className="bg-band py-16">
+        <div className="mx-auto max-w-[1120px] px-6">
+          <h2 className="mb-8 text-center text-[32px] font-semibold">Open requests.</h2>
+
+          {/* Centred flex rather than a grid: with one or two open requests a
+              grid strands them against the left edge. */}
+          <div className="flex flex-wrap justify-center gap-6">
+            {jobs.map((job) => (
+              <div
+                key={job.id}
+                className="card card-hover flex w-full max-w-[340px] flex-col p-8 text-center"
+              >
+                <p className="eyebrow mb-3">{job.category}</p>
+                <h3 className="text-[21px] leading-[1.2] font-semibold">{job.title}</h3>
+                <p className="mt-3 flex-1 text-[15px] leading-[1.45] text-muted">{job.scope}</p>
+                <p className="mt-4 text-[13px] text-muted">Due {job.deadline}</p>
+                <button
+                  onClick={() => openDealRoom(job.id)}
+                  disabled={opening !== null}
+                  className="btn-pill-sm btn-primary mt-6 self-center"
+                >
+                  {opening === job.id ? 'Researching…' : 'Open deal room'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Mandate. Its own quiet section rather than a sidebar tile: it is the
+          product's whole claim, and it reads better with air around it. */}
+      <section className="page">
+        <div className="mx-auto max-w-2xl">
+          <div className="card p-8 text-center">
+            <p className="eyebrow">Agent mandate</p>
+            <p className="price mt-3 text-[56px] leading-none font-semibold">
               {usd(BUYER_MANDATE.maxAmountCents)}
-            </div>
-            <div className="mt-0.5 font-mono text-xs uppercase text-dim">
-              {BUYER_MANDATE.currency}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            </p>
+            <p className="mt-2 text-[15px] text-muted">
+              {BUYER_MANDATE.currency.toUpperCase()} &middot; expires {expiry}
+            </p>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
               {BUYER_MANDATE.categories.map((c) => (
-                <span key={c} className="rounded bg-inset px-2 py-1 font-mono text-xs text-dim">
+                <span key={c} className="chip">
                   {c}
                 </span>
               ))}
             </div>
-            <div className="mt-4 text-sm text-dim">
-              Expires <span className="text-ink">{expiry}</span>
-            </div>
-            <a href="/dashboard/mandate" className="mt-4 block text-sm text-accent hover:underline">
-              View mandate details
+
+            <p className="mx-auto mt-6 max-w-md text-[14px] leading-[1.5] text-muted">
+              The ceiling travels inside the agent&apos;s signed access token. The server reads it
+              from verified claims, never from a database row.
+            </p>
+            <a href="/dashboard/mandate" className="link-arrow mt-5 inline-block text-[15px]">
+              View mandate details &rsaquo;
             </a>
           </div>
-          <p className="text-xs leading-relaxed text-dim">
-            The ceiling travels inside the agent&apos;s signed access token. The server reads it
-            from verified claims, never from a database row.
-          </p>
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }
 

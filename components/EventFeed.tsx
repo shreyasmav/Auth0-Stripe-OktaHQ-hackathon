@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import type { EventLogEntry } from '@/lib/types';
 
 const SOURCE_COLOR: Record<EventLogEntry['source'], string> = {
-  auth0: 'text-accent',
-  stripe: 'text-money',
+  auth0: 'text-blue',
+  stripe: 'text-green',
   agent: 'text-ink',
-  system: 'text-dim',
+  system: 'text-muted',
 };
 
 /**
@@ -42,22 +42,20 @@ export default function EventFeed() {
   }, []);
 
   return (
-    <div className="rounded-xl border border-line bg-inset p-4">
-      <h3 className="font-mono text-[11px] uppercase tracking-[0.25em] text-dim">Event log</h3>
-      {warn && (
-        <p className="mt-2 font-mono text-xs text-warn">event feed unreachable, retrying...</p>
-      )}
-      <div className="mt-2 max-h-48 space-y-1.5 overflow-y-auto font-mono text-xs leading-relaxed">
-        {events.length === 0 && !warn && <p className="text-dim/60">waiting for activity...</p>}
+    <div className="card p-5">
+      <h3 className="text-[15px] font-medium">Activity</h3>
+      {warn && <p className="mt-2 text-[13px] text-amber">Event feed unreachable, retrying…</p>}
+      <div className="mt-3 max-h-48 space-y-1.5 overflow-y-auto font-mono text-[11px] leading-relaxed">
+        {events.length === 0 && !warn && <p className="text-muted">Waiting for activity…</p>}
         {events.map((e) => (
           <div key={e.id} className="flex gap-2">
-            <span className="shrink-0 text-dim/60">
+            <span className="shrink-0 text-muted">
               {new Date(e.ts).toLocaleTimeString('en-US', { hour12: false })}
             </span>
-            <span className={`shrink-0 ${SOURCE_COLOR[e.source] ?? 'text-dim'}`}>
-              [{e.source}]
+            <span className={`shrink-0 ${SOURCE_COLOR[e.source] ?? 'text-muted'}`}>
+              {e.source}
             </span>
-            <span className="text-dim">{e.text}</span>
+            <span className="text-muted">{e.text}</span>
           </div>
         ))}
       </div>

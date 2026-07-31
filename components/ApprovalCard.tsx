@@ -128,7 +128,7 @@ export default function ApprovalCard({
     toDataURL(`${window.location.origin}/approve/${approvalId}`, {
       width: 220,
       margin: 1,
-      color: { dark: '#0a0a0f', light: '#ffffff' },
+      color: { dark: '#1d1d1f', light: '#ffffff' },
     })
       .then(setQr)
       .catch(() => {
@@ -136,7 +136,7 @@ export default function ApprovalCard({
       });
   }, [approvalId]);
 
-  const usdAmount = `$${((deal.amountCents ?? 0) / 100).toFixed(2)}`;
+  const usdAmount = usd(deal.amountCents ?? 0);
 
   /**
    * Accept the settled price and hand off to Stripe's hosted Checkout.
@@ -186,7 +186,7 @@ export default function ApprovalCard({
         setDemo403(null);
         onPaid(data.payment, data.deal);
       } else if (isDenialDemo) {
-        // This 403 is the point. Show the raw refusal, in red.
+        // This 403 is the point. Show the raw refusal.
         setDemo403({ status: res.status, body });
       } else {
         setPayError(`Payment failed (${res.status}): ${JSON.stringify(body)}`);
@@ -207,46 +207,38 @@ export default function ApprovalCard({
   const paid = deal.state === 'paid';
 
   return (
-    <div
-      className={`rounded-xl border p-5 ${
-        approved
-          ? 'border-money/40 bg-raised'
-          : denied
-            ? 'border-danger/40 bg-raised'
-            : 'border-warn/40 bg-raised'
-      }`}
-    >
-      <span
-        className={`font-mono text-[11px] uppercase tracking-[0.25em] ${
-          approved ? 'text-money' : denied ? 'text-danger' : 'text-warn'
-        }`}
-      >
-        {approved ? 'Approval granted' : denied ? 'Approval denied' : 'Human approval required'}
-      </span>
+    <div className={`card p-6 ${denied ? 'border-red' : ''}`}>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[17px] font-semibold">
+          {approved ? 'Approved' : denied ? 'Declined' : 'Approval required'}
+        </h2>
+        {approved && <span className="chip chip-ok">Authorized</span>}
+        {!approved && !denied && <span className="chip chip-warn">Pending</span>}
+      </div>
 
-      {warn && <p className="mt-3 text-sm text-warn">{warn}</p>}
+      {warn && <p className="mt-3 text-[14px] text-amber">{warn}</p>}
 
       {/* The RAR payload, rendered as human text. Raw JSON lives in the details tag. */}
       {approval && (
-        <dl className="mt-3 space-y-1.5 text-sm">
-          <div className="flex justify-between gap-3">
-            <dt className="text-dim">To</dt>
-            <dd className="font-medium">{detail?.vendor ?? vendorName}</dd>
+        <dl className="mt-4 space-y-2.5 text-[15px]">
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted">To</dt>
+            <dd className="text-right font-medium">{detail?.vendor ?? vendorName}</dd>
           </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-dim">Amount</dt>
-            <dd className="font-mono font-bold">
-              {amountCents !== undefined ? usd(amountCents) : '--'}
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted">Amount</dt>
+            <dd className="price font-semibold">
+              {amountCents !== undefined ? usd(amountCents) : '—'}
             </dd>
           </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-dim">Scope</dt>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted">Scope</dt>
             <dd className="text-right">{detail?.scope_of_work ?? `Deal ${deal.id}`}</dd>
           </div>
           {detail?.deadline && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-dim">Deadline</dt>
-              <dd className="font-mono">{detail.deadline}</dd>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted">Deadline</dt>
+              <dd className="text-right">{detail.deadline}</dd>
             </div>
           )}
         </dl>
@@ -254,50 +246,54 @@ export default function ApprovalCard({
 
       {/* Pending: spinner, QR, plain link. */}
       {approval && approval.status === 'pending' && (
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm text-warn">
-            <span className="dot inline-block h-2 w-2 rounded-full bg-warn" />
-            <span className="dot inline-block h-2 w-2 rounded-full bg-warn" />
-            <span className="dot inline-block h-2 w-2 rounded-full bg-warn" />
-            <span className="ml-1">waiting for approver...</span>
+        <div className="mt-5 space-y-4">
+          <div className="flex items-center gap-2 text-[14px] text-muted">
+            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-amber" />
+            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-amber" />
+            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-amber" />
+            <span className="ml-1">Waiting for approver…</span>
           </div>
 
           {/* Approve in place. The QR below is the phone-facing path and the
               honest demo beat, but requiring a tab switch to resolve every
               approval made the flow feel stalled. */}
-          <div className="flex gap-2">
+          <div className="flex gap-2.5">
             <button
               type="button"
               onClick={() => void decide('approved')}
               disabled={deciding}
-              className="flex-1 rounded-lg bg-money px-4 py-2.5 text-sm font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="btn-pill-sm btn-primary flex-1"
             >
-              {deciding ? 'Authorizing...' : 'Approve here'}
+              {deciding ? 'Authorizing…' : 'Approve'}
             </button>
             <button
               type="button"
               onClick={() => void decide('denied')}
               disabled={deciding}
-              className="rounded-lg border border-danger/60 px-4 py-2.5 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+              className="btn-pill-sm btn-secondary"
             >
-              Deny
+              Decline
             </button>
           </div>
-          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-dim/50">
-            or scan to approve from a phone
-          </p>
+
+          <p className="text-center text-[13px] text-muted">Or scan to approve from a phone</p>
           {qr && (
-            <div className="flex justify-center rounded-lg bg-white p-3">
+            <div className="flex justify-center rounded-[12px] border border-rule bg-white p-3">
               {/* Data URI QR: next/image adds nothing here. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qr} alt={`QR code linking to the approval screen for ${approval.id}`} width={220} height={220} />
+              <img
+                src={qr}
+                alt={`QR code linking to the approval screen for ${approval.id}`}
+                width={220}
+                height={220}
+              />
             </div>
           )}
           <a
             href={`/approve/${approval.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block truncate text-center font-mono text-xs text-accent hover:underline"
+            className="block truncate text-center text-[13px] text-blue hover:underline"
           >
             /approve/{approval.id}
           </a>
@@ -306,22 +302,18 @@ export default function ApprovalCard({
 
       {/* Resolved: who and when, raw payload for the judge who asks. */}
       {approval && (approved || denied) && (
-        <div className="mt-4 space-y-3">
-          <p className={`text-sm ${approved ? 'text-money' : 'text-danger'}`}>
-            {approved ? 'Approved' : 'Denied'} by{' '}
-            <span className="font-mono">{approval.approverUserId}</span>
+        <div className="mt-5 space-y-3">
+          <p className={`text-[14px] ${approved ? 'text-green' : 'text-red'}`}>
+            {approved ? 'Approved' : 'Declined'} by {approval.approverUserId}
             {approval.resolvedAt && (
-              <>
-                {' '}at{' '}
-                {new Date(approval.resolvedAt).toLocaleTimeString('en-US', { hour12: false })}
-              </>
+              <> at {new Date(approval.resolvedAt).toLocaleTimeString('en-US', { hour12: false })}</>
             )}
           </p>
-          <details className="rounded-lg bg-inset p-3">
-            <summary className="cursor-pointer font-mono text-xs text-dim">
-              raw authorization payload
+          <details className="well p-3">
+            <summary className="cursor-pointer text-[13px] text-muted">
+              Raw authorization payload
             </summary>
-            <pre className="mt-2 overflow-x-auto font-mono text-[11px] leading-relaxed text-dim">
+            <pre className="mt-2 overflow-x-auto font-mono text-[11px] leading-relaxed text-muted">
               {JSON.stringify(
                 {
                   binding_message: approval.bindingMessage,
@@ -337,47 +329,48 @@ export default function ApprovalCard({
 
       {/* The two payment buttons. The 403 attempt is a demo beat, not an error. */}
       {approved && !paid && (
-        <div className="mt-4 space-y-3">
-          <button
-            onClick={() => pay('invalid', true)}
-            disabled={paying !== null}
-            className="w-full rounded-lg border border-danger/50 px-4 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
-          >
-            {paying === 'demo' ? 'Trying...' : 'Try pay WITHOUT approval'}
-          </button>
-          {demo403 && (
-            <pre className="overflow-x-auto rounded-lg border border-danger/50 bg-danger/10 p-3 font-mono text-xs leading-relaxed text-danger">
-              {`HTTP ${demo403.status || 'ERR'}\n${JSON.stringify(demo403.body, null, 2)}`}
-            </pre>
-          )}
+        <div className="mt-5 space-y-3 border-t border-rule pt-5">
           <button
             onClick={() => approval?.grantedToken && void goToStripe(approval.grantedToken)}
             disabled={paying !== null || redirecting || !approval?.grantedToken}
-            className="w-full rounded-lg bg-money px-4 py-3 text-base font-bold text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="btn-pill btn-primary w-full"
           >
-            {redirecting
-              ? 'Opening Stripe...'
-              : `Accept ${usdAmount} and pay on Stripe`}
+            {redirecting ? 'Opening Stripe…' : `Accept ${usdAmount} and pay`}
           </button>
-          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-dim/50">
-            you will be redirected to stripe to enter card details
+          <p className="text-center text-[12px] text-muted">
+            You will be redirected to Stripe to enter card details.
           </p>
+
+          <button
+            onClick={() => pay('invalid', true)}
+            disabled={paying !== null}
+            className="btn-pill-sm btn-danger w-full"
+          >
+            {paying === 'demo' ? 'Trying…' : 'Try to pay without approval'}
+          </button>
+          {demo403 && (
+            <pre className="overflow-x-auto rounded-[12px] border border-red/40 bg-red/5 p-3 font-mono text-[11px] leading-relaxed text-red">
+              {`HTTP ${demo403.status || 'ERR'}\n${JSON.stringify(demo403.body, null, 2)}`}
+            </pre>
+          )}
+
           {/* Server-confirmed charge, kept for an unattended run where nobody
               is at the keyboard to complete a hosted checkout. */}
           <button
             onClick={() => approval?.grantedToken && pay(approval.grantedToken, false)}
             disabled={paying !== null || redirecting || !approval?.grantedToken}
-            className="w-full rounded-lg border border-line px-4 py-2 text-xs font-medium text-dim transition-colors hover:bg-raised disabled:opacity-50"
+            className="w-full text-center text-[13px] text-blue hover:underline disabled:opacity-50"
           >
-            {paying === 'real' ? 'Executing...' : 'Charge server-side instead (unattended demo)'}
+            {paying === 'real' ? 'Executing…' : 'Charge server-side instead (unattended demo)'}
           </button>
+
           {!approval?.grantedToken && (
-            <p className="text-xs text-warn">
+            <p className="text-[13px] text-amber">
               Approval is granted but no elevated token arrived yet. Poll again or check the
               approval service.
             </p>
           )}
-          {payError && <p className="text-sm text-warn">{payError}</p>}
+          {payError && <p className="text-[14px] text-amber">{payError}</p>}
         </div>
       )}
     </div>

@@ -37,67 +37,46 @@ export default function MandatePage() {
   const expiryIso = new Date(BUYER_MANDATE.expiresAt * 1000).toISOString().slice(0, 10);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold tracking-tight">Agent mandate</h1>
-        <span className="rounded-full border border-accent/50 bg-accent/10 px-3 py-1 font-mono text-xs uppercase tracking-widest text-accent">
-          Admin only
-        </span>
+    <div className="page mx-auto max-w-2xl">
+      <div className="text-center">
+        <p className="eyebrow mb-3">Admin only</p>
+        <h1 className="text-[40px] leading-none font-semibold">Agent mandate.</h1>
       </div>
 
-      <div className="rounded-xl border border-line bg-raised p-6">
-        <div className="grid grid-cols-2 gap-5">
-          <label className="block">
-            <span className="font-mono text-xs uppercase tracking-widest text-dim">Ceiling</span>
-            <input
-              value={usd(BUYER_MANDATE.maxAmountCents)}
-              disabled
-              className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-line bg-inset px-3 py-2.5 font-mono text-2xl font-bold text-money opacity-80"
-            />
-          </label>
-          <label className="block">
-            <span className="font-mono text-xs uppercase tracking-widest text-dim">Currency</span>
-            <input
-              value={BUYER_MANDATE.currency.toUpperCase()}
-              disabled
-              className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-line bg-inset px-3 py-2.5 font-mono text-2xl opacity-80"
-            />
-          </label>
-          <label className="block">
-            <span className="font-mono text-xs uppercase tracking-widest text-dim">Categories</span>
-            <input
-              value={BUYER_MANDATE.categories.join(', ')}
-              disabled
-              className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-line bg-inset px-3 py-2.5 font-mono opacity-80"
-            />
-          </label>
-          <label className="block">
-            <span className="font-mono text-xs uppercase tracking-widest text-dim">Expires</span>
-            <input
-              value={expiryIso}
-              disabled
-              className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-line bg-inset px-3 py-2.5 font-mono opacity-80"
-            />
-          </label>
-        </div>
-
-        <p className="mt-6 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 text-sm leading-relaxed text-dim">
-          <span className="font-medium text-accent">Why is this disabled?</span> The ceiling lives
-          in a signed token claim
-          (<code className="font-mono text-xs text-ink">https://mandate.dev/mandate</code>) minted
-          by Auth0 on the agent&apos;s client-credentials exchange. Nothing typed here would change
-          what the server trusts.
-        </p>
+      <div className="card mt-10 divide-y divide-rule">
+        {[
+          { label: 'Ceiling', value: usd(BUYER_MANDATE.maxAmountCents), big: true },
+          { label: 'Currency', value: BUYER_MANDATE.currency.toUpperCase() },
+          { label: 'Categories', value: BUYER_MANDATE.categories.join(', ') },
+          { label: 'Expires', value: expiryIso },
+        ].map((row) => (
+          <div key={row.label} className="flex items-baseline justify-between gap-6 px-7 py-5">
+            <span className="text-[15px] text-muted">{row.label}</span>
+            <span
+              className={
+                row.big ? 'price text-[28px] font-semibold' : 'text-[17px] font-medium'
+              }
+            >
+              {row.value}
+            </span>
+          </div>
+        ))}
       </div>
+
+      <p className="mt-6 text-[15px] leading-[1.5] text-muted">
+        <span className="font-medium text-ink">Why can&apos;t I edit this?</span> The ceiling lives
+        in a signed token claim{' '}
+        <code className="font-mono text-[13px] text-ink">https://mandate.dev/mandate</code> minted
+        by Auth0 on the agent&apos;s client-credentials exchange. Nothing typed here would change
+        what the server trusts.
+      </p>
 
       {flags && (
-        <div className="flex gap-2 font-mono text-xs text-dim">
-          <span className="rounded bg-raised px-2 py-1">demo: {flags.demoMode}</span>
-          <span className="rounded bg-raised px-2 py-1">approval: {flags.approvalMode}</span>
-          <span className="rounded bg-raised px-2 py-1">negotiation: {flags.negotiationMode}</span>
-          <span className="rounded bg-raised px-2 py-1">
-            auth0: {flags.auth0Configured ? 'configured' : 'mock'}
-          </span>
+        <div className="mt-8 flex flex-wrap justify-center gap-2">
+          <span className="chip">Demo: {flags.demoMode}</span>
+          <span className="chip">Approval: {flags.approvalMode}</span>
+          <span className="chip">Negotiation: {flags.negotiationMode}</span>
+          <span className="chip">Auth0: {flags.auth0Configured ? 'configured' : 'mock'}</span>
         </div>
       )}
     </div>

@@ -7,16 +7,11 @@ const usd = (c: number) =>
   '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const SPEAKER_LABEL: Record<Turn['speaker'], string> = {
-  buyer_agent: 'Acme buyer agent',
-  vendor_agent: 'Bright Electric agent',
+  buyer_agent: 'Buyer agent',
+  vendor_agent: 'Vendor agent',
   system: 'system',
 };
 
-/**
- * The visual centerpiece. Buyer left, vendor right, system centered.
- * Offers render as inline mono badges. Each turn fades in once and the
- * pane keeps itself scrolled to the newest turn.
- */
 /** Counts up so a slow live round is visibly progressing, not frozen. */
 function ElapsedCounter() {
   const [secs, setSecs] = useState(0);
@@ -24,9 +19,17 @@ function ElapsedCounter() {
     const t = setInterval(() => setSecs((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, []);
-  return <p className="font-mono text-xs text-dim/40">{secs}s elapsed</p>;
+  return <p className="text-[13px] text-muted">{secs}s elapsed</p>;
 }
 
+/**
+ * The visual centerpiece. Buyer left, vendor right, system centered.
+ *
+ * Message bubbles follow the iMessage grammar rather than a chat-app one:
+ * generous 20px radius, the incoming side in the grey band colour, the
+ * outgoing side in blue, and no borders anywhere. Offer amounts sit under
+ * the text as their own line so they read at a distance.
+ */
 export default function Transcript({
   turns,
   negotiating,
@@ -46,34 +49,27 @@ export default function Transcript({
   }, [turns.length, negotiating]);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-line bg-raised">
-      <div className="flex items-center justify-between border-b border-line px-6 py-4">
-        <div>
-          <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-dim">
-            Negotiation transcript
-          </h2>
-          <span className="fig-label">FIG. 02 &middot; AGENT TO AGENT &middot; REV A</span>
-        </div>
+    <div className="card flex h-full flex-col overflow-hidden">
+      <div className="flex items-center justify-between border-b border-rule px-6 py-4">
+        <h2 className="text-[17px] font-semibold">Negotiation</h2>
         {negotiating && (
-          <span className="flex items-center gap-1.5 font-mono text-xs text-accent">
-            live
-            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+          <span className="flex items-center gap-1.5 text-[13px] text-muted">
+            Live
+            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-blue" />
+            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-blue" />
+            <span className="dot inline-block h-1.5 w-1.5 rounded-full bg-blue" />
           </span>
         )}
       </div>
 
-      <div ref={paneRef} className="flex-1 space-y-4 overflow-y-auto p-6">
+      <div ref={paneRef} className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
         {turns.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3">
-            <p className="font-mono text-sm uppercase tracking-[0.25em] text-dim/60">
-              {emptyHint ?? 'Opening the deal room...'}
-            </p>
+            <p className="text-[17px] text-muted">{emptyHint ?? 'Opening the deal room…'}</p>
             <span className="flex items-center gap-1.5">
-              <span className="dot inline-block h-2 w-2 rounded-full bg-accent" />
-              <span className="dot inline-block h-2 w-2 rounded-full bg-accent" />
-              <span className="dot inline-block h-2 w-2 rounded-full bg-accent" />
+              <span className="dot inline-block h-2 w-2 rounded-full bg-blue" />
+              <span className="dot inline-block h-2 w-2 rounded-full bg-blue" />
+              <span className="dot inline-block h-2 w-2 rounded-full bg-blue" />
             </span>
             <ElapsedCounter />
           </div>
@@ -83,7 +79,7 @@ export default function Transcript({
           if (turn.speaker === 'system') {
             return (
               <div key={i} className="turn-in text-center">
-                <span className="inline-block max-w-[85%] rounded-lg border border-line/60 bg-inset px-4 py-2 font-mono text-base text-dim">
+                <span className="inline-block max-w-[85%] text-[14px] leading-[1.45] text-muted">
                   {turn.text}
                 </span>
               </div>
@@ -92,30 +88,26 @@ export default function Transcript({
           const isBuyer = turn.speaker === 'buyer_agent';
           return (
             <div key={i} className={`turn-in flex ${isBuyer ? 'justify-start' : 'justify-end'}`}>
-              <div
-                className={`max-w-[80%] rounded-xl border px-5 py-4 ${
-                  isBuyer
-                    ? 'border-accent/30 bg-accent/10 rounded-tl-sm'
-                    : 'border-line bg-inset rounded-tr-sm'
-                }`}
-              >
-                <div
-                  className={`mb-1.5 font-mono text-[11px] uppercase tracking-widest ${
-                    isBuyer ? 'text-accent' : 'text-dim'
-                  }`}
-                >
+              <div className={`max-w-[78%] ${isBuyer ? 'text-left' : 'text-right'}`}>
+                <div className="mb-1.5 px-1 text-[12px] text-muted">
                   {SPEAKER_LABEL[turn.speaker]}
                 </div>
-                <p className="text-xl leading-relaxed">{turn.text}</p>
-                {typeof turn.offerCents === 'number' && (
-                  <span
-                    className={`mt-3 inline-block rounded-md px-3 py-1 font-mono text-lg font-bold tabular-nums ${
-                      isBuyer ? 'bg-accent/20 text-accent' : 'bg-line text-ink'
-                    }`}
-                  >
-                    {usd(turn.offerCents)}
-                  </span>
-                )}
+                <div
+                  className={`rounded-[20px] px-5 py-3.5 text-left ${
+                    isBuyer ? 'bg-band text-ink' : 'bg-blue text-white'
+                  }`}
+                >
+                  <p className="text-[17px] leading-[1.45]">{turn.text}</p>
+                  {typeof turn.offerCents === 'number' && (
+                    <span
+                      className={`price mt-2.5 block text-[22px] font-semibold ${
+                        isBuyer ? 'text-ink' : 'text-white'
+                      }`}
+                    >
+                      {usd(turn.offerCents)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -123,9 +115,9 @@ export default function Transcript({
 
         {negotiating && turns.length > 0 && (
           <div className="flex justify-center gap-1.5 pt-1">
-            <span className="dot inline-block h-2 w-2 rounded-full bg-dim" />
-            <span className="dot inline-block h-2 w-2 rounded-full bg-dim" />
-            <span className="dot inline-block h-2 w-2 rounded-full bg-dim" />
+            <span className="dot inline-block h-2 w-2 rounded-full bg-muted" />
+            <span className="dot inline-block h-2 w-2 rounded-full bg-muted" />
+            <span className="dot inline-block h-2 w-2 rounded-full bg-muted" />
           </div>
         )}
       </div>
