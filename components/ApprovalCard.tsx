@@ -52,6 +52,7 @@ export default function ApprovalCard({
   const [paying, setPaying] = useState<'demo' | 'real' | null>(null);
   const [demo403, setDemo403] = useState<{ status: number; body: unknown } | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   // Create the approval exactly once, unless the deal already has one.
   useEffect(() => {
@@ -134,6 +135,42 @@ export default function ApprovalCard({
         // The plain link below covers a QR failure.
       });
   }, [approvalId]);
+
+  const usdAmount = `$${((deal.amountCents ?? 0) / 100).toFixed(2)}`;
+
+  /**
+   * Accept the settled price and hand off to Stripe's hosted Checkout.
+   *
+   * The elevated token still rides on the request: /checkout runs the same
+   * §8 gate as /pay, so being redirected to Stripe is not a way around the
+   * mandate. The approval is consumed on completion, not here, so abandoning
+   * the Stripe page leaves the deal payable.
+   */
+  async function goToStripe(token: string) {
+    if (redirecting) return;
+    setRedirecting(true);
+    setPayError(null);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/checkout`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+      });
+      const body = (await res.json()) as { url?: string; error?: string; message?: string };
+      if (res.ok && body.url) {
+        window.location.href = body.url;
+        return;
+      }
+      setPayError(
+        body.error === 'stripe_not_configured'
+          ? 'Stripe is not configured. Add STRIPE_SECRET_KEY, or use the server-side charge below.'
+          : `Could not open Stripe checkout: ${body.message ?? body.error ?? res.status}`,
+      );
+    } catch (err) {
+      setPayError(`Could not reach the checkout endpoint: ${(err as Error).message}`);
+    } finally {
+      setRedirecting(false);
+    }
+  }
 
   async function pay(token: string, isDenialDemo: boolean) {
     setPaying(isDenialDemo ? 'demo' : 'real');
@@ -314,11 +351,25 @@ export default function ApprovalCard({
             </pre>
           )}
           <button
-            onClick={() => approval?.grantedToken && pay(approval.grantedToken, false)}
-            disabled={paying !== null || !approval?.grantedToken}
+            onClick={() => approval?.grantedToken && void goToStripe(approval.grantedToken)}
+            disabled={paying !== null || redirecting || !approval?.grantedToken}
             className="w-full rounded-lg bg-money px-4 py-3 text-base font-bold text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {paying === 'real' ? 'Executing...' : 'Execute payment'}
+            {redirecting
+              ? 'Opening Stripe...'
+              : `Accept ${usdAmount} and pay on Stripe`}
+          </button>
+          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-dim/50">
+            you will be redirected to stripe to enter card details
+          </p>
+          {/* Server-confirmed charge, kept for an unattended run where nobody
+              is at the keyboard to complete a hosted checkout. */}
+          <button
+            onClick={() => approval?.grantedToken && pay(approval.grantedToken, false)}
+            disabled={paying !== null || redirecting || !approval?.grantedToken}
+            className="w-full rounded-lg border border-line px-4 py-2 text-xs font-medium text-dim transition-colors hover:bg-raised disabled:opacity-50"
+          >
+            {paying === 'real' ? 'Executing...' : 'Charge server-side instead (unattended demo)'}
           </button>
           {!approval?.grantedToken && (
             <p className="text-xs text-warn">

@@ -62,6 +62,8 @@ export type Deal = {
   transcript: Turn[];
   approvalId?: string;
   paymentIntentId?: string;
+  /** Hosted Checkout session, when the human paid via Stripe's page. */
+  checkoutSessionId?: string;
   applicationFeeCents?: number;
   createdAt: number;
   // Live path: the sourced vendor/market research this negotiation ran on.

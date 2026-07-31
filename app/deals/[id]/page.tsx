@@ -111,6 +111,44 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
     };
   }, [id]);
 
+  // Returning from Stripe's hosted Checkout. The webhook is the durable path;
+  // this confirms immediately so the panel updates without waiting on it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'cancelled') {
+      setWarn('Checkout cancelled. The approval is still valid, so you can pay again.');
+      window.history.replaceState({}, '', `/deals/${id}`);
+      return;
+    }
+    if (params.get('checkout') !== 'success') return;
+    const sessionId = params.get('session_id') ?? undefined;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/deals/${id}/checkout/confirm`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        const body = (await res.json()) as { deal?: Deal; payment?: PayResult; error?: string };
+        if (!alive) return;
+        if (res.ok && body.deal && body.payment) {
+          setDeal(body.deal);
+          setPayment(body.payment);
+        } else {
+          setWarn(`Returned from Stripe but could not confirm payment (${body.error ?? res.status}).`);
+        }
+      } catch (err) {
+        if (alive) setWarn(`Returned from Stripe but confirmation failed: ${(err as Error).message}`);
+      } finally {
+        window.history.replaceState({}, '', `/deals/${id}`);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
   const researchedVendor = research?.vendors?.[0]?.name;
   const vendorName = researchedVendor ?? (deal ? (ORG_NAMES[deal.vendorOrgId] ?? deal.vendorOrgId) : 'Vendor');
   const buyerName = deal ? (ORG_NAMES[deal.buyerOrgId] ?? deal.buyerOrgId) : 'Buyer';

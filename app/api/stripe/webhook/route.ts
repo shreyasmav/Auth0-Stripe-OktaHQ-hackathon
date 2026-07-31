@@ -51,6 +51,29 @@ export async function POST(req: NextRequest) {
     }
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
+
+      // Deal payment via hosted Checkout. This is the durable path; the
+      // browser return handler does the same thing sooner so the UI does not
+      // wait on delivery. Both are idempotent.
+      const dealId = session.metadata?.deal_id;
+      const paidDeal = dealId ? store.deals.get(dealId) : undefined;
+      if (paidDeal && paidDeal.state !== 'paid' && session.payment_status === 'paid') {
+        const amountCents = session.amount_total ?? paidDeal.amountCents ?? 0;
+        paidDeal.state = 'paid';
+        paidDeal.amountCents = amountCents;
+        paidDeal.applicationFeeCents = Math.round(amountCents * 0.03);
+        paidDeal.checkoutSessionId = session.id;
+        if (typeof session.payment_intent === 'string') {
+          paidDeal.paymentIntentId = session.payment_intent;
+        }
+        const approval = paidDeal.approvalId ? store.approvals.get(paidDeal.approvalId) : undefined;
+        if (approval) {
+          (approval as { consumed?: boolean }).consumed = true;
+          delete approval.grantedToken;
+        }
+        logEvent('stripe', `Webhook: deal ${paidDeal.id} paid via Checkout, $${(amountCents / 100).toFixed(2)}.`);
+      }
+
       const orgId = session.metadata?.org_id;
       const org = orgId ? store.orgs.get(orgId) : undefined;
       if (org) {
