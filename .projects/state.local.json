@@ -2,12 +2,51 @@
   "version": 1,
   "project": {
     "catalog": "prod",
-    "merchantId": "acct_1Tz3iNB77A3U7LFz",
+    "initializedAt": "2026-07-31T00:08:52.807Z",
     "merchantDisplayName": "acct_1Tz3iNB77A3U7LFz",
+    "merchantId": "acct_1Tz3iNB77A3U7LFz",
     "projectId": "project_61V8RxkmhbRlce63B16V8Rfk3YSQqkaMbO9tzdXdACJc",
-    "projectName": "agentmarketplace",
-    "initializedAt": "2026-07-31T00:08:52.807Z"
+    "projectName": "agentmarketplace"
   },
-  "providers": {},
-  "resources": {}
+  "providers": {
+    "auth0": {
+      "accountRequestId": "facctrq_61V8Rzqg4kM7799zx16V8Rfk3YSQqkaMbO9tzdXdAKC8",
+      "configuration": {
+        "locality": "us",
+        "naming_prefix": "agentmarketplace"
+      },
+      "linkedAt": "2026-07-31T00:11:08.298Z",
+      "providerId": "prvdr_61UVctyxfLOj4FpVw5Bmi",
+      "providerName": "Auth0",
+      "redirectUrl": null,
+      "requestedAt": "2026-07-31T00:11:08.298Z",
+      "status": "complete"
+    }
+  },
+  "resources": {
+    "auth0-client": {
+      "configuration": {
+        "name": "agentmarketplace"
+      },
+      "createdAt": "2026-07-31T00:11:28.053Z",
+      "lastRevealedAt": "2026-07-31T00:11:28.457Z",
+      "lastStatus": "complete",
+      "name": "auth0-client",
+      "providerId": "prvdr_61UVctyxfLOj4FpVw5Bmi",
+      "providerName": "Auth0",
+      "resourceId": "fres_61V8S0CE3xENFeVmf16V8Rfk3YSQqkaMbO9tzdXdAWiG",
+      "serviceId": "client"
+    },
+    "auth0-plan": {
+      "configuration": {},
+      "createdAt": "2026-07-31T00:11:13.506Z",
+      "lastRevealedAt": "2026-07-31T00:11:13.885Z",
+      "lastStatus": "complete",
+      "name": "auth0-plan",
+      "providerId": "prvdr_61UVctyxfLOj4FpVw5Bmi",
+      "providerName": "Auth0",
+      "resourceId": "fres_61V8RzyckB2zbM24016V8Rfk3YSQqkaMbO9tzdXdASJE",
+      "serviceId": "free"
+    }
+  }
 }
