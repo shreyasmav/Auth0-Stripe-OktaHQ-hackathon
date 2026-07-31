@@ -7,6 +7,17 @@ import { logEvent, snapshot, store } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
+// This route holds an SSE stream open for the whole negotiation. A live run
+// measured 66s end to end (6 rounds against up to 3 vendors), which is well
+// past Vercel's 10s default - the stream would be killed mid-transcript and
+// the deal would be stranded in `negotiating` forever.
+//
+// 60 is the ceiling a Hobby project can actually get. A live run needs more
+// than that, so on Vercel either raise this to 300 on a Pro plan or run the
+// demo with NEGOTIATION_MODE=scripted (~7s), which is what the deploy falls
+// back to with no ANTHROPIC_API_KEY set anyway.
+export const maxDuration = 60;
+
 /** The §11.1 fixture job, which keeps its rigged scripted transcript. */
 function isSeededPanelJob(deal: { research?: { spec: { title: string; scope: string; category: string } } }) {
   const spec = deal.research?.spec;
