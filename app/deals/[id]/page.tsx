@@ -6,6 +6,7 @@ import Transcript from '@/components/Transcript';
 import MandateBadge from '@/components/MandateBadge';
 import ApprovalCard from '@/components/ApprovalCard';
 import PaymentPanel, { type PayResult } from '@/components/PaymentPanel';
+import AcceptAndPay from '@/components/AcceptAndPay';
 import TokenDrawer from '@/components/TokenDrawer';
 import EventFeed from '@/components/EventFeed';
 import ResearchPanel from '@/components/ResearchPanel';
@@ -238,6 +239,17 @@ export default function DealPage({ params }: { params: Promise<{ id: string }> }
               }}
             />
           )}
+
+          {/* Within mandate: no human approval was needed, so the approval card
+              never renders. This is the accept-and-pay path for those deals. */}
+          {deal &&
+            !payment &&
+            deal.state !== 'paid' &&
+            typeof deal.amountCents === 'number' &&
+            deal.amountCents <= ceiling &&
+            !showApproval && (
+              <AcceptAndPay deal={deal} vendorName={vendorName} onError={setWarn} />
+            )}
 
           {deal && <PaymentPanel payment={payment} deal={deal} vendorName={vendorName} />}
 

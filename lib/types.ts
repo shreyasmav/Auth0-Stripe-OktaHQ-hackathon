@@ -75,7 +75,10 @@ export type Approval = {
   id: string;
   dealId: string;
   approverUserId: string;
-  mode: 'ciba' | 'frontchannel';
+  // 'mandate' means no human was asked: the settled amount was already inside
+  // the agent's authorized ceiling, and that authorization is recorded here so
+  // the audit trail says why the payment was permitted.
+  mode: 'ciba' | 'frontchannel' | 'mandate';
   status: 'pending' | 'approved' | 'denied' | 'expired';
   authReqId?: string;            // CIBA
   bindingMessage: string;
